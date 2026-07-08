@@ -1,24 +1,10 @@
-import Sidebar from "./components/layout/Sidebar";
+import MainLayout from "./components/layout/MainLayout";
+import Dashboard from "./pages/Dashboard";
 
 export default function App() {
   return (
-    <div
-      style={{
-        display: "flex",
-      }}
-    >
-      <Sidebar />
-
-      <div
-        style={{
-          flex: 1,
-          padding: 40,
-        }}
-      >
-        <h1>Dashboard</h1>
-
-        <p>Welcome back, Anmol 👋</p>
-      </div>
-    </div>
+    <MainLayout>
+      <Dashboard />
+    </MainLayout>
   );
 }
