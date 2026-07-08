@@ -32,7 +32,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "electron": "43.1.0",
+    "electron": "^43.1.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "better-sqlite3": "^12.11.1",
     "clsx": "^2.1.1",
     "dayjs": "^1.11.21",
     "electron-squirrel-startup": "^1.0.1",
@@ -54,7 +55,12 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.18.1",
     "recharts": "^3.9.2",
+    "sqlite3": "^6.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.11.1": true,
+    "electron@43.1.0": true
   }
 }
