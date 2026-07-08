@@ -6,7 +6,7 @@
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
-    "start": "electron-forge start",
+    "start": "set GYP_MSVS_OVERRIDE_PATH=C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools&& set GYP_MSVS_VERSION=2022&& electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
@@ -32,7 +32,7 @@
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "electron": "^43.1.0",
+    "electron": "43.1.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -55,7 +55,6 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.18.1",
     "recharts": "^3.9.2",
-    "sqlite3": "^6.0.1",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },

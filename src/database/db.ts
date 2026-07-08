@@ -3,22 +3,32 @@ import { app } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
-let database: Database.Database;
+let db: Database.Database | null = null;
 
-export function getDatabase() {
-  if (database) return database;
+export function getDatabase(): Database.Database {
+  if (db) return db;
 
-  const dbFolder = path.join(app.getPath("userData"), "database");
+  const databaseDirectory = path.join(
+    app.getPath("userData"),
+    "database"
+  );
 
-  if (!fs.existsSync(dbFolder)) {
-    fs.mkdirSync(dbFolder, { recursive: true });
+  if (!fs.existsSync(databaseDirectory)) {
+    fs.mkdirSync(databaseDirectory, { recursive: true });
   }
 
-  const dbPath = path.join(dbFolder, "klearvision.db");
+  const databasePath = path.join(
+    databaseDirectory,
+    "klearvision.db"
+  );
 
-  database = new Database(dbPath);
+  db = new Database(databasePath);
 
-  database.pragma("journal_mode = WAL");
+  db.pragma("journal_mode = WAL");
+  db.pragma("foreign_keys = ON");
 
-  return database;
+  console.log("✅ SQLite Connected");
+  console.log("📁 Database:", databasePath);
+
+  return db;
 }

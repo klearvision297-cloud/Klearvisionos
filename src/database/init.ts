@@ -1,31 +1,12 @@
 import { getDatabase } from "./db";
+import { runMigrations } from "./migrate";
 
 export function initializeDatabase() {
-  const db = getDatabase();
+  getDatabase();
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS customers (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+  runMigrations();
 
-      customerCode TEXT UNIQUE,
-
-      name TEXT NOT NULL,
-
-      mobile TEXT NOT NULL,
-
-      whatsapp TEXT,
-
-      address TEXT,
-
-      gender TEXT,
-
-      dob TEXT,
-
-      createdAt TEXT,
-
-      updatedAt TEXT
-    );
-  `);
-
-  console.log("✅ Database initialized.");
+  console.log("");
+  console.log("🚀 Klear Vision Database Ready");
+  console.log("");
 }
