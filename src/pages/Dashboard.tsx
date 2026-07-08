@@ -1,4 +1,5 @@
-import StatCard from "../components/dashboard/StatCard";
+import QuickActions from "../components/Dashboard/QuickActions";
+import StatCard from "../components/Dashboard/StatCard";
 
 export default function Dashboard() {
   return (
@@ -34,6 +35,8 @@ export default function Dashboard() {
           icon="⚠"
         />
       </div>
+
+      <QuickActions />
     </>
   );
 }

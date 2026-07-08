@@ -181,3 +181,29 @@ font-weight:700;
 color:#0F172A;
 
 }
+.quick-actions {
+  margin-top: 40px;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+  margin-top: 20px;
+}
+
+.action-button {
+  border: none;
+  padding: 18px;
+  border-radius: 16px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.action-button:hover {
+  transform: translateY(-3px);
+  filter: brightness(1.05);
+}
