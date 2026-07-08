@@ -207,3 +207,63 @@ color:#0F172A;
   transform: translateY(-3px);
   filter: brightness(1.05);
 }
+.search-box{
+
+width:100%;
+
+padding:16px;
+
+border-radius:14px;
+
+border:1px solid #CBD5E1;
+
+margin:20px 0;
+
+font-size:15px;
+
+}
+
+.customer-list{
+
+display:flex;
+
+flex-direction:column;
+
+gap:16px;
+
+}
+
+.customer-card{
+
+background:white;
+
+padding:20px;
+
+border-radius:16px;
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+box-shadow:0 3px 10px rgba(0,0,0,.05);
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.customer-card:hover{
+
+transform:translateY(-2px);
+
+}
+.activeMenu {
+  background: #2563eb;
+}
+
+.menuButton {
+  text-decoration: none;
+}

@@ -9,15 +9,49 @@ import {
   Settings,
 } from "lucide-react";
 
+import { NavLink } from "react-router-dom";
+
 const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard" },
-  { icon: Users, label: "Customers" },
-  { icon: Receipt, label: "Billing" },
-  { icon: Package, label: "Inventory" },
-  { icon: ShoppingCart, label: "Purchases" },
-  { icon: Wallet, label: "Expenses" },
-  { icon: BarChart3, label: "Reports" },
-  { icon: Settings, label: "Settings" },
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    path: "/",
+  },
+  {
+    icon: Users,
+    label: "Customers",
+    path: "/customers",
+  },
+  {
+    icon: Receipt,
+    label: "Billing",
+    path: "/billing",
+  },
+  {
+    icon: Package,
+    label: "Inventory",
+    path: "/inventory",
+  },
+  {
+    icon: ShoppingCart,
+    label: "Purchases",
+    path: "/purchases",
+  },
+  {
+    icon: Wallet,
+    label: "Expenses",
+    path: "/expenses",
+  },
+  {
+    icon: BarChart3,
+    label: "Reports",
+    path: "/reports",
+  },
+  {
+    icon: Settings,
+    label: "Settings",
+    path: "/settings",
+  },
 ];
 
 export default function Sidebar() {
@@ -36,10 +70,18 @@ export default function Sidebar() {
           const Icon = item.icon;
 
           return (
-            <button key={item.label} className="menuButton">
+            <NavLink
+              key={item.label}
+              to={item.path}
+              className={({ isActive }) =>
+                isActive
+                  ? "menuButton activeMenu"
+                  : "menuButton"
+              }
+            >
               <Icon size={20} />
               <span>{item.label}</span>
-            </button>
+            </NavLink>
           );
         })}
       </nav>
