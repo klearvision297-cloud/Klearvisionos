@@ -1,31 +1,50 @@
+import type { Customer } from "../../types/customer";
+
 type CustomerCardProps = {
-  name: string;
-  mobile: string;
-  balance: number;
+  customer: Customer;
 };
 
 export default function CustomerCard({
-  name,
-  mobile,
-  balance,
+  customer,
 }: CustomerCardProps) {
   return (
     <div className="customer-card">
       <div>
-        <h3>{name}</h3>
+        <h3>{customer.name}</h3>
 
-        <p>{mobile}</p>
+        <p>{customer.mobile}</p>
+
+        <small
+          style={{
+            color: "#6B7280",
+          }}
+        >
+          {customer.customerCode}
+        </small>
       </div>
 
       <div
         style={{
-          color: balance > 0 ? "#DC2626" : "#16A34A",
-          fontWeight: 700,
+          textAlign: "right",
         }}
       >
-        {balance > 0
-          ? `₹${balance}`
-          : "Paid"}
+        <div
+          style={{
+            color: "#2563EB",
+            fontWeight: 700,
+          }}
+        >
+          {customer.totalOrders} Orders
+        </div>
+
+        <div
+          style={{
+            color: "#16A34A",
+            fontSize: 14,
+          }}
+        >
+          ₹{customer.totalSpent}
+        </div>
       </div>
     </div>
   );

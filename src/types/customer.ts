@@ -1,3 +1,19 @@
+export interface CreateCustomerDTO {
+  name: string;
+  mobile: string;
+  whatsapp?: string;
+  email?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  reference?: string;
+  eyeTestDone?: boolean;
+  remarks?: string;
+}
+
 export interface Customer {
   id: number;
 
@@ -7,13 +23,33 @@ export interface Customer {
 
   mobile: string;
 
-  whatsapp?: string;
+  whatsapp: string | null;
 
-  address?: string;
+  email: string | null;
 
-  gender?: "Male" | "Female" | "Other";
+  gender: string | null;
 
-  dob?: string;
+  dateOfBirth: string | null;
+
+  address: string | null;
+
+  city: string | null;
+
+  state: string | null;
+
+  pincode: string | null;
+
+  reference: string | null;
+
+  eyeTestDone: number;
+
+  remarks: string | null;
+
+  totalOrders: number;
+
+  totalSpent: number;
 
   createdAt: string;
+
+  updatedAt: string;
 }
