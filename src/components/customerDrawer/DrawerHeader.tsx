@@ -3,6 +3,7 @@ import {
   User,
   X,
   BadgeCheck,
+  Pencil,
 } from "lucide-react";
 
 type DrawerHeaderProps = {
@@ -13,11 +14,14 @@ type DrawerHeaderProps = {
   } | null;
 
   onClose: () => void;
+
+  onEdit: () => void;
 };
 
 export default function DrawerHeader({
   customer,
   onClose,
+  onEdit,
 }: DrawerHeaderProps) {
   return (
     <div
@@ -102,23 +106,50 @@ export default function DrawerHeader({
           </div>
         </div>
 
-        <button
-          onClick={onClose}
+        <div
           style={{
-            width: 42,
-            height: 42,
-            borderRadius: 12,
-            border: "none",
-            background: "#E2E8F0",
-            cursor: "pointer",
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            transition: ".2s",
+            gap: 10,
           }}
         >
-          <X size={20} />
-        </button>
+          <button
+            onClick={onEdit}
+            title="Edit Customer"
+            style={{
+              height: 42,
+              padding: "0 16px",
+              borderRadius: 12,
+              border: "none",
+              background: "#2563EB",
+              color: "white",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontWeight: 600,
+            }}
+          >
+            <Pencil size={16} />
+            Edit
+          </button>
+
+          <button
+            onClick={onClose}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              border: "none",
+              background: "#E2E8F0",
+              cursor: "pointer",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
     </div>
   );

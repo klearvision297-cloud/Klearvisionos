@@ -13,7 +13,16 @@ import type {
 export default function Customers() {
   const [open, setOpen] = useState(false);
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [modalMode, setModalMode] = useState<
+    "create" | "edit"
+  >("create");
+
+  const [editingCustomer, setEditingCustomer] =
+    useState<Customer | null>(null);
+
+  const [customers, setCustomers] = useState<
+    Customer[]
+  >([]);
 
   const [search, setSearch] = useState("");
 
@@ -52,17 +61,54 @@ export default function Customers() {
     loadCustomers(search);
   }, [search]);
 
-  async function createCustomer(
+  async function saveCustomer(
     customer: CreateCustomerDTO
   ) {
     try {
-      await window.customer.create(customer);
+      if (
+        modalMode === "create"
+      ) {
+        await window.customer.create(
+          customer
+        );
 
-      toast.success("Customer saved.");
+        toast.success(
+          "Customer created successfully."
+        );
+      } else {
+        if (!editingCustomer) return;
+
+        await window.customer.update(
+          editingCustomer.id,
+          customer
+        );
+
+        toast.success(
+          "Customer updated successfully."
+        );
+      }
 
       await loadCustomers(search);
 
+      if (
+        drawerOpen &&
+        selectedCustomer
+      ) {
+        const refreshed =
+          await window.customer.getById(
+            selectedCustomer.id
+          );
+
+        setSelectedCustomer(
+          refreshed
+        );
+      }
+
       setOpen(false);
+
+      setEditingCustomer(null);
+
+      setModalMode("create");
     } catch (error) {
       console.error(error);
 
@@ -107,12 +153,33 @@ export default function Customers() {
     setSelectedCustomer(null);
   }
 
+  function openCreateModal() {
+    setModalMode("create");
+
+    setEditingCustomer(null);
+
+    setOpen(true);
+  }
+
+  function openEditModal() {
+    if (!selectedCustomer) return;
+
+    setModalMode("edit");
+
+    setEditingCustomer(
+      selectedCustomer
+    );
+
+    setOpen(true);
+  }
+
   return (
     <>
       <div
         style={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent:
+            "space-between",
           marginBottom: 20,
         }}
       >
@@ -120,7 +187,9 @@ export default function Customers() {
 
         <button
           className="newCustomerButton"
-          onClick={() => setOpen(true)}
+          onClick={
+            openCreateModal
+          }
         >
           + New Customer
         </button>
@@ -131,39 +200,73 @@ export default function Customers() {
         placeholder="Search customer..."
         value={search}
         onChange={(e) =>
-          setSearch(e.target.value)
+          setSearch(
+            e.target.value
+          )
         }
       />
 
       <div className="customer-list">
-        {customers.length === 0 ? (
-          <p>No customers found.</p>
+        {customers.length ===
+        0 ? (
+          <p>
+            No customers found.
+          </p>
         ) : (
-          customers.map((customer) => (
-            <CustomerCard
-              key={customer.id}
-              customer={customer}
-              onClick={() =>
-                openCustomerDrawer(
+          customers.map(
+            (customer) => (
+              <CustomerCard
+                key={
                   customer.id
-                )
-              }
-            />
-          ))
+                }
+                customer={
+                  customer
+                }
+                onClick={() =>
+                  openCustomerDrawer(
+                    customer.id
+                  )
+                }
+              />
+            )
+          )
         )}
       </div>
 
       <CustomerModal
         open={open}
-        onClose={() => setOpen(false)}
-        onSave={createCustomer}
+        mode={modalMode}
+        customer={
+          editingCustomer
+        }
+        onClose={() => {
+          setOpen(false);
+          setEditingCustomer(
+            null
+          );
+          setModalMode(
+            "create"
+          );
+        }}
+        onSave={
+          saveCustomer
+        }
       />
 
       <CustomerDrawer
         open={drawerOpen}
-        loading={drawerLoading}
-        customer={selectedCustomer}
-        onClose={closeDrawer}
+        loading={
+          drawerLoading
+        }
+        customer={
+          selectedCustomer
+        }
+        onClose={
+          closeDrawer
+        }
+        onEdit={
+          openEditModal
+        }
       />
     </>
   );

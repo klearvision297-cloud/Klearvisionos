@@ -1,41 +1,60 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import DrawerHeader from "./DrawerHeader";
 import DrawerStats from "./DrawerStats";
 import DrawerTabs from "./DrawerTabs";
 import DrawerBody from "./DrawerBody";
 
+import type { Customer } from "../../types/customer";
+
+export type DrawerTab =
+  | "details"
+  | "prescriptions"
+  | "orders"
+  | "payments"
+  | "notes";
+
 type CustomerDrawerProps = {
   open: boolean;
+  loading?: boolean;
+  customer: Customer | null;
   onClose: () => void;
-  customer?: {
-    id: number;
-    customerCode: string;
-    name: string;
-    mobile: string;
-    whatsapp?: string;
-    address?: string;
-    totalOrders?: number;
-    totalSpent?: number;
-    outstanding?: number;
-  } | null;
+  onEdit: () => void;
 };
 
 export default function CustomerDrawer({
   open,
-  onClose,
+  loading = false,
   customer,
+  onClose,
+  onEdit,
 }: CustomerDrawerProps) {
+  const [activeTab, setActiveTab] =
+    useState<DrawerTab>("details");
+
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
+    if (!open) return;
+
+    setActiveTab("details");
+  }, [open]);
+
+  useEffect(() => {
+    const handleEscape = (
+      event: KeyboardEvent
+    ) => {
       if (event.key === "Escape") {
         onClose();
       }
     };
 
     if (open) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
+      document.addEventListener(
+        "keydown",
+        handleEscape
+      );
+
+      document.body.style.overflow =
+        "hidden";
     }
 
     return () => {
@@ -43,7 +62,9 @@ export default function CustomerDrawer({
         "keydown",
         handleEscape
       );
-      document.body.style.overflow = "auto";
+
+      document.body.style.overflow =
+        "auto";
     };
   }, [open, onClose]);
 
@@ -60,13 +81,21 @@ export default function CustomerDrawer({
         <DrawerHeader
           customer={customer}
           onClose={onClose}
+          onEdit={onEdit}
         />
 
         <DrawerStats customer={customer} />
 
-        <DrawerTabs />
+        <DrawerTabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
 
-        <DrawerBody customer={customer} />
+        <DrawerBody
+          activeTab={activeTab}
+          customer={customer}
+          loading={loading}
+        />
       </aside>
     </>
   );

@@ -70,6 +70,55 @@ export class CustomerRepository {
     });
   }
 
+  update(
+    id: number,
+    customer: CreateCustomerDTO
+  ) {
+    const now = new Date().toISOString();
+
+    const statement = this.db.prepare(`
+      UPDATE customers
+      SET
+        name=@name,
+        mobile=@mobile,
+        whatsapp=@whatsapp,
+        email=@email,
+        gender=@gender,
+        dateOfBirth=@dateOfBirth,
+        address=@address,
+        city=@city,
+        state=@state,
+        pincode=@pincode,
+        reference=@reference,
+        eyeTestDone=@eyeTestDone,
+        remarks=@remarks,
+        updatedAt=@updatedAt
+      WHERE id=@id
+    `);
+
+    return statement.run({
+      id,
+
+      name: customer.name,
+      mobile: customer.mobile,
+
+      whatsapp: customer.whatsapp ?? null,
+      email: customer.email ?? null,
+      gender: customer.gender ?? null,
+      dateOfBirth: customer.dateOfBirth ?? null,
+      address: customer.address ?? null,
+      city: customer.city ?? null,
+      state: customer.state ?? null,
+      pincode: customer.pincode ?? null,
+      reference: customer.reference ?? null,
+      remarks: customer.remarks ?? null,
+
+      eyeTestDone: customer.eyeTestDone ? 1 : 0,
+
+      updatedAt: now,
+    });
+  }
+
   findByMobile(mobile: string) {
     return this.db
       .prepare("SELECT * FROM customers WHERE mobile = ?")
