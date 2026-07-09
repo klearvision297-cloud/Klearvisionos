@@ -28,6 +28,17 @@ export class CustomerService {
     return this.repository.getAll();
   }
 
+  getById(id: number) {
+    const customer =
+      this.repository.findById(id);
+
+    if (!customer) {
+      throw new Error("Customer not found.");
+    }
+
+    return customer;
+  }
+
   search(keyword: string) {
     return this.repository.search(keyword);
   }

@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 
 import CustomerCard from "../components/customers/CustomerCard";
 import CustomerModal from "../components/customers/CustomerModal";
+import CustomerDrawer from "../components/customerDrawer/CustomerDrawer";
 
 import type {
   CreateCustomerDTO,
@@ -16,18 +17,34 @@ export default function Customers() {
 
   const [search, setSearch] = useState("");
 
+  const [drawerOpen, setDrawerOpen] =
+    useState(false);
+
+  const [drawerLoading, setDrawerLoading] =
+    useState(false);
+
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<Customer | null>(null);
+
   async function loadCustomers(keyword = "") {
     try {
       if (keyword.trim() === "") {
-        const data = await window.customer.getAll();
+        const data =
+          await window.customer.getAll();
+
         setCustomers(data);
       } else {
-        const data = await window.customer.search(keyword);
+        const data =
+          await window.customer.search(keyword);
+
         setCustomers(data);
       }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to load customers.");
+
+      toast.error(
+        "Failed to load customers."
+      );
     }
   }
 
@@ -52,9 +69,42 @@ export default function Customers() {
       if (error instanceof Error) {
         toast.error(error.message);
       } else {
-        toast.error("Unable to save customer.");
+        toast.error(
+          "Unable to save customer."
+        );
       }
     }
+  }
+
+  async function openCustomerDrawer(
+    id: number
+  ) {
+    try {
+      setDrawerOpen(true);
+
+      setDrawerLoading(true);
+
+      const customer =
+        await window.customer.getById(id);
+
+      setSelectedCustomer(customer);
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        "Failed to load customer."
+      );
+
+      setDrawerOpen(false);
+    } finally {
+      setDrawerLoading(false);
+    }
+  }
+
+  function closeDrawer() {
+    setDrawerOpen(false);
+
+    setSelectedCustomer(null);
   }
 
   return (
@@ -93,6 +143,11 @@ export default function Customers() {
             <CustomerCard
               key={customer.id}
               customer={customer}
+              onClick={() =>
+                openCustomerDrawer(
+                  customer.id
+                )
+              }
             />
           ))
         )}
@@ -102,6 +157,13 @@ export default function Customers() {
         open={open}
         onClose={() => setOpen(false)}
         onSave={createCustomer}
+      />
+
+      <CustomerDrawer
+        open={drawerOpen}
+        loading={drawerLoading}
+        customer={selectedCustomer}
+        onClose={closeDrawer}
       />
     </>
   );

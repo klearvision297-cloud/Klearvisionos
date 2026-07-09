@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld("customer", {
   getAll: () =>
     ipcRenderer.invoke("customer:getAll"),
 
+  getById: (id: number) =>
+    ipcRenderer.invoke("customer:getById", id),
+
   search: (keyword: string) =>
     ipcRenderer.invoke("customer:search", keyword),
 

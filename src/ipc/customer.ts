@@ -12,11 +12,24 @@ export function registerCustomerIpc() {
     return customerService.getAll();
   });
 
-  ipcMain.handle("customer:search", (_, keyword: string) => {
-    return customerService.search(keyword);
-  });
+  ipcMain.handle(
+    "customer:getById",
+    (_, id: number) => {
+      return customerService.getById(id);
+    }
+  );
 
-  ipcMain.handle("customer:delete", (_, id: number) => {
-    return customerService.delete(id);
-  });
+  ipcMain.handle(
+    "customer:search",
+    (_, keyword: string) => {
+      return customerService.search(keyword);
+    }
+  );
+
+  ipcMain.handle(
+    "customer:delete",
+    (_, id: number) => {
+      return customerService.delete(id);
+    }
+  );
 }
