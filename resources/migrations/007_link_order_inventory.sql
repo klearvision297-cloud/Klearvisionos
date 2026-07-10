@@ -6,6 +6,26 @@ CREATE TABLE IF NOT EXISTS order_items
 
     inventoryId INTEGER NOT NULL,
 
+    itemCode TEXT NOT NULL,
+
+    itemType TEXT NOT NULL,
+
+    brand TEXT,
+
+    category TEXT,
+
+    model TEXT,
+
+    color TEXT,
+
+    size TEXT,
+
+    barcode TEXT,
+
+    hsnCode TEXT,
+
+    gstRate REAL NOT NULL DEFAULT 0,
+
     quantity INTEGER NOT NULL DEFAULT 1,
 
     purchasePrice REAL NOT NULL DEFAULT 0,
@@ -36,3 +56,9 @@ ON order_items(orderId);
 
 CREATE INDEX IF NOT EXISTS idx_order_items_inventory
 ON order_items(inventoryId);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_itemCode
+ON order_items(itemCode);
+
+CREATE INDEX IF NOT EXISTS idx_order_items_barcode
+ON order_items(barcode);

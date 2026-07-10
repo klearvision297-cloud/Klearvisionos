@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
-import CustomerCard from "../components/customers/CustomerCard";
-import CustomerModal from "../components/customers/CustomerModal";
-import CustomerDrawer from "../components/customerDrawer/CustomerDrawer";
+import CustomerCard from "../features/customers/components/customers/CustomerCard";
+import CustomerModal from "../features/customers/components/customers/CustomerModal";
+import CustomerDrawer from "../features/customers/components/customerDrawer/CustomerDrawer";
+import { Button, EmptyState, PageHeader, SearchBar } from "../components/ui";
 
 import type {
   CreateCustomerDTO,
@@ -175,28 +176,13 @@ export default function Customers() {
 
   return (
     <>
-      <div
-        style={{
-          display: "flex",
-          justifyContent:
-            "space-between",
-          marginBottom: 20,
-        }}
-      >
-        <h1>Customers</h1>
+      <PageHeader
+        title="Customers"
+        subtitle="Manage customer profiles and purchase history."
+        action={<Button onClick={openCreateModal}>+ New Customer</Button>}
+      />
 
-        <button
-          className="newCustomerButton"
-          onClick={
-            openCreateModal
-          }
-        >
-          + New Customer
-        </button>
-      </div>
-
-      <input
-        className="search-box"
+      <SearchBar
         placeholder="Search customer..."
         value={search}
         onChange={(e) =>
@@ -204,14 +190,17 @@ export default function Customers() {
             e.target.value
           )
         }
+        onClear={() => setSearch("")}
       />
 
-      <div className="customer-list">
+      <div className="customer-list kv-page-list">
         {customers.length ===
         0 ? (
-          <p>
-            No customers found.
-          </p>
+          <EmptyState
+            title={search ? "No matching customers" : "No customers yet"}
+            description={search ? "Try a different name, mobile number, or customer code." : "Create your first customer profile to begin."}
+            action={!search ? <Button onClick={openCreateModal}>+ New Customer</Button> : undefined}
+          />
         ) : (
           customers.map(
             (customer) => (

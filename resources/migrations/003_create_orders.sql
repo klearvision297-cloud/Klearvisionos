@@ -8,38 +8,31 @@ CREATE TABLE IF NOT EXISTS orders
 
     prescriptionId INTEGER,
 
+    invoiceType TEXT NOT NULL DEFAULT 'Retail',
+
+    gstMode TEXT NOT NULL DEFAULT 'Included',
+
+    orderStatus TEXT NOT NULL DEFAULT 'Draft',
+
+    paymentStatus TEXT NOT NULL DEFAULT 'Pending',
+
     orderDate TEXT NOT NULL,
 
     deliveryDate TEXT,
 
-    deliveryStatus TEXT NOT NULL DEFAULT 'Pending',
-
-    frameBrand TEXT,
-    frameModel TEXT,
-    frameColor TEXT,
-
-    framePrice REAL NOT NULL DEFAULT 0,
-
-    lensCompany TEXT,
-    lensType TEXT,
-    lensIndex TEXT,
-    lensCoating TEXT,
-
-    lensPrice REAL NOT NULL DEFAULT 0,
-
-    fittingCharge REAL NOT NULL DEFAULT 0,
+    subtotal REAL NOT NULL DEFAULT 0,
 
     discount REAL NOT NULL DEFAULT 0,
 
-    totalAmount REAL NOT NULL,
+    gstAmount REAL NOT NULL DEFAULT 0,
 
-    advancePaid REAL NOT NULL DEFAULT 0,
+    roundOff REAL NOT NULL DEFAULT 0,
 
-    balanceAmount REAL NOT NULL,
+    totalAmount REAL NOT NULL DEFAULT 0,
 
-    paymentStatus TEXT NOT NULL DEFAULT 'Pending',
+    paidAmount REAL NOT NULL DEFAULT 0,
 
-    warranty TEXT,
+    balanceAmount REAL NOT NULL DEFAULT 0,
 
     remarks TEXT,
 
@@ -47,11 +40,11 @@ CREATE TABLE IF NOT EXISTS orders
 
     updatedAt TEXT NOT NULL,
 
-    FOREIGN KEY(customerId)
+    FOREIGN KEY (customerId)
         REFERENCES customers(id)
         ON DELETE CASCADE,
 
-    FOREIGN KEY(prescriptionId)
+    FOREIGN KEY (prescriptionId)
         REFERENCES prescriptions(id)
         ON DELETE SET NULL
 );
@@ -63,7 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_number
 ON orders(orderNumber);
 
 CREATE INDEX IF NOT EXISTS idx_orders_status
-ON orders(deliveryStatus);
+ON orders(orderStatus);
 
 CREATE INDEX IF NOT EXISTS idx_orders_payment
 ON orders(paymentStatus);

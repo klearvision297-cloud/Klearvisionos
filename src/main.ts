@@ -31,7 +31,9 @@ const createWindow = () => {
     );
   }
 
-  mainWindow.webContents.openDevTools();
+  mainWindow.webContents.openDevTools({
+  mode: "detach",
+});
 };
 
 app.whenReady().then(() => {

@@ -1,39 +1,16 @@
-import QuickActions from "../components/Dashboard/QuickActions";
-import StatCard from "../components/Dashboard/StatCard";
+import QuickActions from "../features/customers/components/Dashboard/QuickActions";
+import { PageHeader, StatCard } from "../components/ui";
 
 export default function Dashboard() {
   return (
     <>
-      <h1>Good Evening, Anmol 👋</h1>
-
-      <p className="dashboard-subtitle">
-        Welcome back to Klear Vision OS
-      </p>
+      <PageHeader title="Good Evening, Anmol" subtitle="Welcome back to Klear Vision OS" />
 
       <div className="stats-grid">
-        <StatCard
-          title="Today's Sales"
-          value="₹0"
-          icon="💰"
-        />
-
-        <StatCard
-          title="Today's Profit"
-          value="₹0"
-          icon="📈"
-        />
-
-        <StatCard
-          title="Pending Orders"
-          value="0"
-          icon="👓"
-        />
-
-        <StatCard
-          title="Low Stock"
-          value="0"
-          icon="⚠"
-        />
+        <StatCard label="Today's Sales" value="₹0" icon="💰" />
+        <StatCard label="Today's Profit" value="₹0" icon="📈" />
+        <StatCard label="Pending Orders" value="0" icon="👓" />
+        <StatCard label="Low Stock" value="0" icon="⚠" />
       </div>
 
       <QuickActions />

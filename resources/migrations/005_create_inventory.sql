@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS inventory
 
     itemCode TEXT NOT NULL UNIQUE,
 
+    barcode TEXT,
+
     itemType TEXT NOT NULL,
 
     brand TEXT,
@@ -16,11 +18,17 @@ CREATE TABLE IF NOT EXISTS inventory
 
     size TEXT,
 
-    barcode TEXT,
+    description TEXT,
 
-    purchasePrice REAL NOT NULL DEFAULT 0,
+    hsnCode TEXT,
+
+    costPrice REAL NOT NULL DEFAULT 0,
+
+    mrp REAL NOT NULL DEFAULT 0,
 
     sellingPrice REAL NOT NULL DEFAULT 0,
+
+    gstRate REAL NOT NULL DEFAULT 0,
 
     openingStock INTEGER NOT NULL DEFAULT 0,
 
@@ -48,11 +56,14 @@ CREATE TABLE IF NOT EXISTS inventory
 CREATE INDEX IF NOT EXISTS idx_inventory_code
 ON inventory(itemCode);
 
+CREATE INDEX IF NOT EXISTS idx_inventory_barcode
+ON inventory(barcode);
+
 CREATE INDEX IF NOT EXISTS idx_inventory_brand
 ON inventory(brand);
 
 CREATE INDEX IF NOT EXISTS idx_inventory_type
 ON inventory(itemType);
 
-CREATE INDEX IF NOT EXISTS idx_inventory_barcode
-ON inventory(barcode);
+CREATE INDEX IF NOT EXISTS idx_inventory_category
+ON inventory(category);

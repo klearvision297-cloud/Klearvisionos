@@ -1,4 +1,6 @@
-*{
+@import "./components/ui/ui.css";
+
+ *{
 margin:0;
 padding:0;
 box-sizing:border-box;
@@ -393,6 +395,355 @@ opacity:1;
 
 width:100%;
 
+}
+
+.kv-page-list { margin-top: 20px; }
+.customer-card { padding: 20px; }
+.customer-card__code { color: #64748b; font-weight: 600; }
+.customer-card__summary { display: flex; flex-direction: column; gap: 6px; text-align: right; }
+.customer-card__orders { color: #2563eb; font-weight: 700; }
+.customer-card__spent { color: #16a34a; font-size: 14px; font-weight: 600; }
+.customer-card__hint { color: #94a3b8; }
+.action-button--primary { background: #2563eb; }.action-button--success { background: #16a34a; }.action-button--warning { background: #ca8a04; }.action-button--danger { background: #dc2626; }
+.billing-page { display: flex; justify-content: center; padding: 24px; }.billing-page__content { display: flex; width: 100%; max-width: 1600px; flex-direction: column; gap: 20px; }.billing-page__summary { display: grid; grid-template-columns: 1fr 380px; align-items: start; gap: 20px; }.billing-card h2 { margin-bottom: 20px; }.billing-card__header, .billing-summary-row, .billing-discount, .billing-grand-total { display: flex; align-items: center; justify-content: space-between; gap: 16px; }.billing-card__header { margin-bottom: 20px; }.billing-table { margin-top: 20px; }.billing-table__empty { padding: 40px !important; color: #94a3b8 !important; text-align: center; }.billing-row__quantity { width: 70px; min-height: 34px; padding: 5px 7px; }.billing-totals { display: grid; gap: 14px; }.billing-totals hr, .billing-payment hr { width: 100%; margin: 6px 0; border: 0; border-top: 1px solid var(--kv-color-border); }.billing-discount > div { display: flex; gap: 8px; }.billing-discount select { min-height: 42px; padding: 0 8px; border: 1px solid var(--kv-color-border-strong); border-radius: var(--kv-radius-sm); background: #fff; }.billing-discount .kv-field { width: 90px; }.billing-grand-total { margin-top: 4px; font-size: 24px; font-weight: 700; }.billing-payment__body { display: grid; gap: 18px; }.billing-payment-methods { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 8px; }.billing-payment-method { width: 100%; }.billing-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; }.billing-header .kv-page-header { margin: 0; }.billing-header__details { display: flex; gap: 30px; }.billing-header__detail { display: flex; align-items: center; gap: 10px; }.billing-header__detail > span { color: var(--kv-color-primary); }.billing-header__detail small, .billing-header__detail strong { display: block; }.billing-header__detail small { color: var(--kv-color-text-muted); font-size: 12px; }
+.stock-history-page > .kv-page-header { margin-bottom: 32px; padding: 32px 34px; border: 1px solid #e2e8f0; border-radius: 24px; background: linear-gradient(118deg, #fff 0%, #f8fbff 100%); box-shadow: 0 12px 30px rgba(15, 23, 42, .05); }.stock-history-stats .kv-stat-card { min-height: 176px; }.stock-history-search > .kv-search-bar { min-height: auto; padding: 0; border: 0; }.stock-history-table-card.kv-card { overflow: hidden; }
+@media (max-width: 900px) { .billing-page { padding: 0; }.billing-page__summary { grid-template-columns: 1fr; }.billing-header { align-items: flex-start; flex-direction: column; }.billing-header__details { flex-wrap: wrap; gap: 16px; } }
+
+.stock-history-page {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding-bottom: 42px;
+  color: #0f172a;
+}
+
+.stock-history-header {
+  position: relative;
+  min-height: 166px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding: 32px 34px;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: linear-gradient(118deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .05);
+}
+
+.stock-history-header::after {
+  position: absolute;
+  top: -110px;
+  right: 42px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, .055);
+  content: "";
+}
+
+.stock-history-header > div {
+  position: relative;
+  z-index: 1;
+}
+
+.stock-history-eyebrow {
+  margin-bottom: 8px;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.stock-history-header h1 {
+  font-size: 36px;
+  line-height: 1.2;
+  letter-spacing: -.04em;
+}
+
+.stock-history-subtitle {
+  max-width: 700px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.stock-history-header-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.stock-history-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 176px;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.stock-history-stat-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: 0;
+  padding: 26px;
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .045);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.stock-history-stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, .08);
+}
+
+.stock-history-stat-card span,
+.stock-history-stat-card strong {
+  display: block;
+}
+
+.stock-history-stat-card span {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.stock-history-stat-card strong {
+  margin-bottom: 8px;
+  font-size: 38px;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+.stock-history-stat-icon {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.stock-history-stat-icon.neutral { background: #f1f5f9; color: #475569; }
+.stock-history-stat-icon.blue { background: #dbeafe; color: #2563eb; }
+.stock-history-stat-icon.red { background: #fee2e2; color: #dc2626; }
+.stock-history-stat-icon.green { background: #dcfce7; color: #16a34a; }
+
+.stock-history-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  margin-bottom: 32px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  background: #fff;
+}
+
+.stock-history-search {
+  display: flex;
+  align-items: center;
+  min-width: 310px;
+  flex: 1;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+}
+
+.stock-history-search:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+
+.stock-history-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #0f172a;
+  font: inherit;
+}
+
+.stock-history-search input::placeholder { color: #94a3b8; }
+
+.stock-history-filters {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #64748b;
+}
+
+.stock-history-filter-list {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #f1f5f9;
+}
+
+.stock-history-filter-list button {
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: .2s ease;
+}
+
+.stock-history-filter-list button:hover { color: #2563eb; }
+.stock-history-filter-list button.active { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+
+.stock-history-table-card {
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .055);
+}
+
+.stock-history-table-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 26px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.stock-history-table-meta h2 { font-size: 18px; letter-spacing: -.02em; }
+.stock-history-table-meta p { margin-top: 5px; color: #64748b; font-size: 13px; }
+
+.stock-history-table-scroll { max-height: calc(100vh - 448px); min-height: 320px; overflow: auto; }
+
+.stock-history-table {
+  width: 100%;
+  min-width: 930px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.stock-history-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 16px 22px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.stock-history-table td {
+  padding: 21px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.stock-history-table tbody tr:nth-child(even) { background: #fbfdff; }
+.stock-history-table tbody tr { transition: background .2s ease, box-shadow .2s ease, transform .2s ease; }
+.stock-history-table tbody tr:hover { background: #eff6ff; box-shadow: inset 4px 0 0 #2563eb; }
+.stock-history-table tbody tr:last-child td { border-bottom: 0; }
+.stock-history-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
+
+.stock-history-date strong,
+.stock-history-product strong,
+.stock-history-date span,
+.stock-history-product span { display: block; }
+.stock-history-date strong,
+.stock-history-product strong { color: #1e293b; font-weight: 700; }
+.stock-history-date span,
+.stock-history-product span { margin-top: 5px; color: #94a3b8; font-size: 12px; }
+
+.stock-history-product strong { font-size: 15px; }
+
+.stock-history-movement {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 76px;
+  color: #64748b;
+}
+
+.stock-history-movement strong { color: #0f172a; }
+
+.stock-history-movement svg { color: #94a3b8; }
+
+.stock-history-type-badge,
+.stock-history-difference {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+.stock-history-type-badge { min-width: 88px; padding: 7px 10px; }
+.stock-history-type-badge.sale { background: #fee2e2; color: #b91c1c; }
+.stock-history-type-badge.purchase { background: #dcfce7; color: #15803d; }
+.stock-history-type-badge.adjustment { background: #dbeafe; color: #1d4ed8; }
+.stock-history-type-badge.return { background: #ffedd5; color: #c2410c; }
+.stock-history-type-badge.billing { background: #f3e8ff; color: #7e22ce; }
+
+.stock-history-difference { min-width: 52px; padding: 7px 10px; font-size: 12px; letter-spacing: 0; }
+.stock-history-difference.positive { background: #dcfce7; color: #15803d; }
+.stock-history-difference.negative { background: #fee2e2; color: #b91c1c; }
+.stock-history-remarks { max-width: 230px; color: #64748b !important; }
+.stock-history-empty-state { padding: 14px 26px 26px; }
+.stock-history-empty-state > div { border-color: #dbeafe; background: #f8fbff; }
+
+@media (max-width: 1180px) {
+  .stock-history-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stock-history-toolbar { align-items: stretch; flex-direction: column; }
+  .stock-history-filters { justify-content: space-between; }
+}
+
+@media (max-width: 720px) {
+  .stock-history-page { padding-bottom: 24px; }
+  .stock-history-header { min-height: 0; margin-bottom: 24px; padding: 26px 22px; }
+  .stock-history-header h1 { font-size: 28px; }
+  .stock-history-header-icon { display: none; }
+  .stock-history-stats { grid-template-columns: 1fr; grid-auto-rows: 150px; gap: 14px; margin-bottom: 24px; }
+  .stock-history-stat-card { padding: 22px; }
+  .stock-history-stat-icon { top: 20px; right: 20px; }
+  .stock-history-toolbar { gap: 14px; margin-bottom: 24px; padding: 14px; }
+  .stock-history-search { min-width: 0; }
+  .stock-history-filters { align-items: flex-start; }
+  .stock-history-filter-list { max-width: calc(100vw - 118px); overflow-x: auto; }
+  .stock-history-filter-list button { white-space: nowrap; }
+  .stock-history-table-scroll { max-height: none; }
+  .stock-history-table-meta { padding: 20px; }
 }
 
 }
