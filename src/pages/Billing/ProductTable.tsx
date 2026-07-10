@@ -1,7 +1,7 @@
-import { Plus } from "lucide-react";
+import { PackageSearch, Plus } from "lucide-react";
 import ProductSearch from "../../features/billing/components/ProductSearch";
 import BillingRow from "../../features/billing/components/BillingRow";
-import { Button, Card, Table } from "../../components/ui";
+import { Button, Card, EmptyState, Table } from "../../components/ui";
 import type { Inventory } from "../../types/inventory";
 
 export type BillingItem = { item: Inventory; quantity: number };
@@ -16,11 +16,17 @@ export default function ProductTable({ items, setItems }: ProductTableProps) {
   function updateQuantity(id: number, quantity: number) { if (quantity < 1) return; setItems(items.map((row) => row.item.id === id ? { ...row, quantity } : row)); }
   function removeItem(id: number) { setItems(items.filter((row) => row.item.id !== id)); }
 
-  return <Card className="billing-card">
-    <div className="billing-card__header"><h2>Bill Items</h2><Button><Plus size={18} /> Search Product</Button></div>
+  return <Card className="billing-card billing-product-card">
+    <div className="billing-card__header"><div><p className="billing-card__eyebrow">Products</p><h2>Bill items <span>{items.length}</span></h2></div><Button size="sm"><Plus size={16} /> Search Product</Button></div>
     <ProductSearch onSelect={addProduct} />
-    <div className="billing-table"><Table><thead><tr><th>Item Code</th><th>Product</th><th>Price</th><th>Qty</th><th>GST</th><th>Total</th><th aria-label="Actions" /></tr></thead><tbody>
-      {items.length === 0 ? <tr><td colSpan={7} className="billing-table__empty">Search and add products to begin billing.</td></tr> : items.map((row) => <BillingRow key={row.item.id} item={row.item} quantity={row.quantity} onQuantityChange={(qty) => updateQuantity(row.item.id, qty)} onRemove={() => removeItem(row.item.id)} />)}
-    </tbody></Table></div>
+    <div className="billing-table">
+      {items.length === 0 ? (
+        <EmptyState icon={<PackageSearch size={22} />} title="No items added" description="Search the catalog above to add a product." />
+      ) : (
+        <Table compact><thead><tr><th>Item Code</th><th>Product</th><th>Price</th><th>Qty</th><th>GST</th><th>Total</th><th aria-label="Actions" /></tr></thead><tbody>
+          {items.map((row) => <BillingRow key={row.item.id} item={row.item} quantity={row.quantity} onQuantityChange={(qty) => updateQuantity(row.item.id, qty)} onRemove={() => removeItem(row.item.id)} />)}
+        </tbody></Table>
+      )}
+    </div>
   </Card>;
 }

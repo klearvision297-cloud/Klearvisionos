@@ -3,6 +3,7 @@ import { Plus, User, X } from "lucide-react";
 
 import SearchDropdown from "../../features/customers/components/common/SearchDropdown";
 import SearchItem from "../../features/customers/components/common/SearchDropdown/SearchItem";
+import { Button, Card } from "../../components/ui";
 
 import type { Customer } from "../../types/customer";
 
@@ -51,70 +52,19 @@ export default function CustomerSelector({
   }
 
   return (
-    <div
-      style={{
-        background: "white",
-        borderRadius: 18,
-        padding: 24,
-        boxShadow: "0 4px 12px rgba(0,0,0,.05)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
+    <Card className="billing-customer-selector">
+      <div className="billing-customer-selector__header">
         <div>
-          <h2
-            style={{
-              marginBottom: 8,
-              color: "#0F172A",
-            }}
-          >
-            Customer
-          </h2>
-
-          <p
-            style={{
-              margin: 0,
-              color: "#64748B",
-              maxWidth: 520,
-            }}
-          >
-            Search customer by name, mobile number, or KV code and select the
-            customer for this bill.
-          </p>
+          <p className="section-heading__eyebrow">Billing customer</p>
+          <h2>Customer</h2>
         </div>
-
-        <button
-          type="button"
-          style={{
-            height: 50,
-            padding: "0 18px",
-            border: "none",
-            borderRadius: 12,
-            background: "#2563EB",
-            color: "white",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          <Plus size={18} />
-          New Customer
-        </button>
+        <Button size="sm"><Plus size={16} />New Customer</Button>
       </div>
 
-      <div style={{ position: "relative", marginBottom: 22 }}>
+      <div className="billing-customer-selector__search">
         <SearchDropdown
           value={search}
-          placeholder="Search customer by Name, Mobile or KV Code..."
+          placeholder="Search name, mobile, or KV code..."
           open={results.length > 0 || (search.trim().length > 0 && !loading)}
           onChange={setSearch}
         >
@@ -129,155 +79,35 @@ export default function CustomerSelector({
               />
             ))
           ) : (
-            <div
-              style={{
-                padding: 18,
-                color: "#64748B",
-              }}
-            >
-              {loading
-                ? "Searching customers..."
-                : search.trim()
-                ? "No customers found."
-                : "Start typing to search customers."
-              }
-            </div>
+            <p className="billing-customer-selector__search-status">
+              {loading ? "Searching customers..." : "No customers found."}
+            </p>
           )}
         </SearchDropdown>
       </div>
 
-      <div
-        style={{
-          padding: 20,
-          borderRadius: 18,
-          border: "1px solid #E2E8F0",
-          background: "#F8FAFC",
-        }}
-      >
-        {selectedCustomer ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 16,
-              alignItems: "center",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: 18,
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  width: 60,
-                  height: 60,
-                  borderRadius: "50%",
-                  background: "#2563EB",
-                  color: "white",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <User size={28} />
-              </div>
-
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    color: "#0F172A",
-                  }}
-                >
-                  {selectedCustomer.name}
-                </h3>
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    color: "#475569",
-                  }}
-                >
-                  {selectedCustomer.customerCode} • {selectedCustomer.mobile}
-                </p>
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    color: "#64748B",
-                    fontSize: 14,
-                  }}
-                >
-                  {selectedCustomer.email ?? "No email"}
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={onClearCustomer}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                border: "1px solid #CBD5E1",
-                borderRadius: 12,
-                padding: "12px 14px",
-                background: "white",
-                color: "#334155",
-                cursor: "pointer",
-              }}
-            >
-              <X size={16} />
-              Clear
-            </button>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-            }}
-          >
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                borderRadius: "50%",
-                background: "#2563EB",
-                color: "white",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <User size={28} />
-            </div>
-
-            <div>
-              <h3
-                style={{
-                  margin: 0,
-                  color: "#0F172A",
-                }}
-              >
-                No Customer Selected
-              </h3>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  color: "#64748B",
-                }}
-              >
-                Search an existing customer or create a new one to continue billing.
-              </p>
-            </div>
-          </div>
+      <div className="billing-customer-selector__selection">
+        <div className="billing-customer-selector__avatar"><User size={24} /></div>
+        <div className="billing-customer-selector__details">
+          {selectedCustomer ? (
+            <>
+              <h3>{selectedCustomer.name}</h3>
+              <p>{selectedCustomer.customerCode} • {selectedCustomer.mobile}</p>
+              <small>{selectedCustomer.email ?? "No email address"}</small>
+            </>
+          ) : (
+            <>
+              <h3>No customer selected</h3>
+              <p>Search an existing customer or create a new profile to continue billing.</p>
+            </>
+          )}
+        </div>
+        {selectedCustomer && (
+          <Button variant="secondary" size="sm" onClick={onClearCustomer}>
+            <X size={16} />Clear
+          </Button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import clsx from "clsx";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "danger";
+  variant?: "primary" | "secondary" | "success" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   fullWidth?: boolean;
   children: ReactNode;

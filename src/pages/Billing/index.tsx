@@ -63,24 +63,24 @@ export default function Billing() {
           onClearCustomer={handleClearCustomer}
         />
 
-        <ProductTable
-          items={billingItems}
-          setItems={setBillingItems}
-        />
-
-        <div className="billing-page__summary">
-          <Totals
+        <div className="billing-page__workspace">
+          <ProductTable
             items={billingItems}
+            setItems={setBillingItems}
           />
 
-          <PaymentPanel
-            items={billingItems}
-            paymentMethod={paymentMethod}
-            setPaymentMethod={setPaymentMethod}
-            received={receivedAmount}
-            setReceived={setReceivedAmount}
-            onSave={handleSaveBill}
-          />
+          <aside className="billing-page__summary" aria-label="Bill totals and payment">
+            <Totals items={billingItems} />
+
+            <PaymentPanel
+              items={billingItems}
+              paymentMethod={paymentMethod}
+              setPaymentMethod={setPaymentMethod}
+              received={receivedAmount}
+              setReceived={setReceivedAmount}
+              onSave={handleSaveBill}
+            />
+          </aside>
         </div>
       </div>
     </div>

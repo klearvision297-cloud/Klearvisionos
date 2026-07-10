@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { SearchCheck, Users } from "lucide-react";
 
 import CustomerCard from "../features/customers/components/customers/CustomerCard";
 import CustomerModal from "../features/customers/components/customers/CustomerModal";
 import CustomerDrawer from "../features/customers/components/customerDrawer/CustomerDrawer";
-import { Button, EmptyState, PageHeader, SearchBar } from "../components/ui";
+import { Button, EmptyState, PageHeader, SearchBar, StatCard } from "../components/ui";
 
 import type {
   CreateCustomerDTO,
@@ -176,22 +177,22 @@ export default function Customers() {
 
   return (
     <>
-      <PageHeader
-        title="Customers"
-        subtitle="Manage customer profiles and purchase history."
-        action={<Button onClick={openCreateModal}>+ New Customer</Button>}
-      />
+      <PageHeader title="Customers" subtitle="Manage customer profiles and purchase history." />
 
-      <SearchBar
-        placeholder="Search customer..."
-        value={search}
-        onChange={(e) =>
-          setSearch(
-            e.target.value
-          )
-        }
-        onClear={() => setSearch("")}
-      />
+      <div className="page-stats">
+        <StatCard label="Customers" value={customers.length} icon={<Users size={20} />} detail="Profiles in the current view" />
+        <StatCard label="Search status" value={search ? "Filtered" : "All"} icon={<SearchCheck size={20} />} detail={search ? "Results update as you type" : "Search by name, mobile, or code"} />
+      </div>
+
+      <div className="page-toolbar">
+        <SearchBar
+          placeholder="Search customer..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch("")}
+        />
+        <Button onClick={openCreateModal}>+ New Customer</Button>
+      </div>
 
       <div className="customer-list kv-page-list">
         {customers.length ===

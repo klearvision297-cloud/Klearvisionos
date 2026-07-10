@@ -6,6 +6,7 @@ import InventoryPricing from "./InventoryPricing";
 import InventoryStock from "./InventoryStock";
 import InventorySupplier from "./InventorySupplier";
 import InventoryRemarks from "./InventoryRemarks";
+import { Button, Modal } from "../../../../components/ui";
 
 import type {
   CreateInventoryDTO,
@@ -175,26 +176,17 @@ export default function InventoryModal({
   }
 
   return (
-    <div className="modal-overlay">
-      <div
-        className="customer-modal"
-        style={{
-          width: 850,
-        }}
-      >
-        <h2>
-          {mode === "create"
-            ? "New Inventory Item"
-            : "Edit Inventory"}
-        </h2>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            margin: "20px 0",
-          }}
-        >
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={mode === "create" ? "New Inventory Item" : "Edit Inventory"}
+      description="Manage product details, pricing, stock, and supplier information."
+      width={850}
+      closeOnBackdrop={false}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={handleSave}>{mode === "create" ? "Create Item" : "Save Changes"}</Button></>}
+    >
+      <div className="inventory-modal">
+        <div className="inventory-modal__tabs">
           {[
             "basic",
             "pricing",
@@ -202,8 +194,11 @@ export default function InventoryModal({
             "supplier",
             "remarks",
           ].map((tab) => (
-            <button
+            <Button
               key={tab}
+              size="sm"
+              variant={activeTab === tab ? "primary" : "ghost"}
+              className="inventory-modal__tab"
               onClick={() =>
                 setActiveTab(
                   tab as Tab
@@ -211,7 +206,7 @@ export default function InventoryModal({
               }
             >
               {tab}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -250,25 +245,7 @@ export default function InventoryModal({
           />
         )}
 
-        <div
-          className="modal-buttons"
-          style={{
-            marginTop: 30,
-          }}
-        >
-          <button onClick={onClose}>
-            Cancel
-          </button>
-
-          <button
-            onClick={handleSave}
-          >
-            {mode === "create"
-              ? "Create Item"
-              : "Save Changes"}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

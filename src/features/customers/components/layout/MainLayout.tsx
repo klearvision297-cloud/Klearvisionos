@@ -9,33 +9,13 @@ export default function MainLayout({
   children,
 }: MainLayoutProps) {
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: "#F8FAFC",
-      }}
-    >
+    <div className="app-shell">
       <Sidebar />
 
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div className="app-shell__content">
         <Header />
 
-        <main
-          style={{
-            flex: 1,
-            padding: 30,
-            overflow: "auto",
-          }}
-        >
-          {children}
-        </main>
+        <main className="app-shell__main">{children}</main>
       </div>
     </div>
   );

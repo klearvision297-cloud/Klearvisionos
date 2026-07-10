@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 
+import { Button, Modal } from "../../../components/ui";
+
 import type { Inventory } from "../../../types/inventory";
 
 type Props = {
@@ -88,22 +90,16 @@ export default function StockAdjustmentModal({
   }
 
   return (
-    <div className="modal-overlay">
-      <div
-        className="customer-modal"
-        style={{
-          width: 550,
-        }}
-      >
-        <h2>Adjust Stock</h2>
-
-        <div
-          style={{
-            display: "grid",
-            gap: 18,
-            marginTop: 25,
-          }}
-        >
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Adjust Stock"
+      description="Record an accurate stock movement for this inventory item."
+      width={550}
+      closeOnBackdrop={false}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Save Stock</Button></>}
+    >
+      <div className="stock-adjustment-form">
           <div>
             <label>Product</label>
 
@@ -208,27 +204,7 @@ export default function StockAdjustmentModal({
               }
             />
           </div>
-        </div>
-
-        <div
-          className="modal-buttons"
-          style={{
-            marginTop: 30,
-          }}
-        >
-          <button
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-
-          <button
-            onClick={save}
-          >
-            Save Stock
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }

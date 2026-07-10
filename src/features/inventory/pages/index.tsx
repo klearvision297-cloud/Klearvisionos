@@ -4,8 +4,8 @@ import toast from "react-hot-toast";
 import InventoryModal from "../components/InventoryModal";
 import InventoryCard from "../components/InventoryCard";
 import StockAdjustmentModal from "../components/StockAdjustmentModal";
-import { PackageSearch } from "lucide-react";
-import { Button, EmptyState, PageHeader, SearchBar } from "../../../components/ui";
+import { Archive, PackageSearch, SearchCheck } from "lucide-react";
+import { Button, EmptyState, PageHeader, SearchBar, StatCard } from "../../../components/ui";
 
 import type {
   CreateInventoryDTO,
@@ -174,16 +174,22 @@ export default function InventoryPage() {
 
   return (
     <>
-      <PageHeader title="Inventory" subtitle="Manage products, pricing, and stock levels." action={<Button onClick={openCreate}>+ New Item</Button>} />
+      <PageHeader title="Inventory" subtitle="Manage products, pricing, and stock levels." />
 
-      <SearchBar
-        placeholder="Search by Item Code, Barcode, Brand, Model..."
-        value={search}
-        onChange={(e) =>
-          setSearch(e.target.value)
-        }
-        onClear={() => setSearch("")}
-      />
+      <div className="page-stats">
+        <StatCard label="Inventory items" value={items.length} icon={<Archive size={20} />} detail="Products in the current view" />
+        <StatCard label="Search status" value={search ? "Filtered" : "All"} icon={<SearchCheck size={20} />} detail={search ? "Matching products shown" : "Search by product detail or code"} />
+      </div>
+
+      <div className="page-toolbar">
+        <SearchBar
+          placeholder="Search by Item Code, Barcode, Brand, Model..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClear={() => setSearch("")}
+        />
+        <Button onClick={openCreate}>+ New Item</Button>
+      </div>
 
       <div className="customer-list kv-page-list">
         {items.length === 0 ? (

@@ -6,6 +6,7 @@ import CustomerContact from "./CustomerContact";
 import CustomerAddress from "./CustomerAddress";
 import CustomerRemarks from "./CustomerRemarks";
 import CustomerOtherInfo from "./CustomerOtherInfo";
+import { Button, Modal } from "../../../../../components/ui";
 
 import type {
   Customer,
@@ -118,25 +119,16 @@ export default function CustomerModal({
   }
 
   return (
-    <div className="modal-overlay">
-      <div
-        className="customer-modal"
-        style={{
-          width: 760,
-          maxHeight: "90vh",
-          overflowY: "auto",
-        }}
-      >
-        <h2
-          style={{
-            marginBottom: 24,
-          }}
-        >
-          {mode === "create"
-            ? "New Customer"
-            : "Edit Customer"}
-        </h2>
-
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={mode === "create" ? "New Customer" : "Edit Customer"}
+      description="Create or update a customer profile and contact details."
+      width={760}
+      closeOnBackdrop={false}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={handleSave}>{mode === "create" ? "Create Customer" : "Save Changes"}</Button></>}
+    >
+      <div className="customer-form">
         <CustomerBasicInfo
           form={form}
           setForm={setForm}
@@ -161,26 +153,7 @@ export default function CustomerModal({
           form={form}
           setForm={setForm}
         />
-
-        <div
-          className="modal-buttons"
-          style={{
-            marginTop: 32,
-          }}
-        >
-          <button onClick={onClose}>
-            Cancel
-          </button>
-
-          <button
-            onClick={handleSave}
-          >
-            {mode === "create"
-              ? "Create Customer"
-              : "Save Changes"}
-          </button>
-        </div>
       </div>
-    </div>
+    </Modal>
   );
 }
