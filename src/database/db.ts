@@ -22,13 +22,14 @@ export function getDatabase(): Database.Database {
     "klearvision.db"
   );
 
-  db = new Database(databasePath);
+  const database = new (Database as unknown as { new(path: string): Database.Database })(databasePath);
+  db = database;
 
-  db.pragma("journal_mode = WAL");
-  db.pragma("foreign_keys = ON");
+  database.pragma("journal_mode = WAL");
+  database.pragma("foreign_keys = ON");
 
   console.log("✅ SQLite Connected");
   console.log("📁 Database:", databasePath);
 
-  return db;
+  return database;
 }

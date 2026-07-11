@@ -1,0 +1,1 @@
+ALTER TABLE payments ADD COLUMN recordedBy TEXT NOT NULL DEFAULT 'Store';

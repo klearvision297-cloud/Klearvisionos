@@ -24,6 +24,7 @@ export interface CreateOrderData {
   balanceAmount: number;
 
   remarks?: string | null;
+  transactionKey?: string | null;
 }
 
 export interface CreateOrderItemData {
@@ -59,10 +60,16 @@ export interface SaveBillData {
   order: CreateOrderData;
 
   items: CreateOrderItemData[];
+
+  reservedInventoryId?: number;
 }
 
 export class OrderRepository {
   private db = getDatabase();
+
+  runTransaction<T>(operation: () => T): T {
+    return this.db.transaction(operation)();
+  }
 
   generateInvoiceNumber() {
     const now = new Date();
@@ -110,27 +117,29 @@ export class OrderRepository {
   }
 
   saveBill(data: SaveBillData) {
-    const transaction =
-      this.db.transaction(() => {
-        const orderId =
-          this.createOrder(data.order);
+    return this.runTransaction(() => this.saveBillInTransaction(data));
+  }
 
-        for (const item of data.items) {
-          this.createOrderItem(
-            orderId,
-            item
-          );
+  findByTransactionKey(transactionKey: string) {
+    return this.db.prepare("SELECT id, orderNumber FROM orders WHERE transactionKey = ?").get(transactionKey) as { id: number; orderNumber: string } | undefined;
+  }
 
-          this.reduceInventoryStock(
-            item.inventoryId,
-            item.quantity
-          );
-        }
-
-        return orderId;
-      });
-
-    return transaction();
+  saveBillInTransaction(data: SaveBillData) {
+    console.log("[billing] Repository saveBillInTransaction", {
+      orderNumber: data.order.orderNumber,
+      itemCount: data.items.length,
+      reservedInventoryId: data.reservedInventoryId,
+    });
+    const orderId = this.createOrder(data.order);
+    console.log("[billing] Order row created", { orderId });
+    for (const item of data.items) {
+      this.createOrderItem(orderId, item);
+      if (item.inventoryId !== data.reservedInventoryId) {
+        console.log("[billing] Reducing inventory", { inventoryId: item.inventoryId, quantity: item.quantity });
+        this.reduceInventoryStock(item.inventoryId, item.quantity, data.order.orderNumber);
+      }
+    }
+    return orderId;
   }
 
   private createOrder(
@@ -161,12 +170,13 @@ export class OrderRepository {
           paidAmount,
           balanceAmount,
           remarks,
+          transactionKey,
           createdAt,
           updatedAt
         )
         VALUES (
           ?,?,?,?,?,?,?,?,?,?,
-          ?,?,?,?,?,?,?,?,?
+          ?,?,?,?,?,?,?,?,?,?
         )
       `
         )
@@ -190,12 +200,13 @@ export class OrderRepository {
           order.paidAmount,
           order.balanceAmount,
           order.remarks ?? null,
+          order.transactionKey ?? null,
           now,
           now
         );
 
     return Number(
-      result.lastInsertRowid
+      (result as { lastInsertRowid: number | bigint }).lastInsertRowid
     );
   }
 
@@ -263,7 +274,8 @@ export class OrderRepository {
 
   private reduceInventoryStock(
     inventoryId: number,
-    quantity: number
+    quantity: number,
+    orderNumber: string,
   ) {
     const item = this.db
       .prepare(
@@ -316,10 +328,12 @@ export class OrderRepository {
           difference,
           reason,
           remarks,
+          referenceType,
+          referenceNumber,
           createdAt
         )
         VALUES (
-          ?,?,?,?,?,?,?,?
+          ?,?,?,?,?,?,?,?,?,?
         )
       `
       )
@@ -331,6 +345,8 @@ export class OrderRepository {
         -quantity,
         "Billing",
         null,
+        "ORDER",
+        orderNumber,
         new Date().toISOString()
       );
   }

@@ -35,6 +35,7 @@ export interface CreateOrderItemDTO {
 }
 
 export interface CreateOrderDTO {
+  transactionKey?: string;
   customerId: number;
 
   prescriptionId?: number;
@@ -62,6 +63,38 @@ export interface CreateOrderDTO {
   balanceAmount: number;
 
   remarks?: string;
+
+  workflowType?: "RETAIL" | "PRESCRIPTION" | "REPAIR";
+
+  opticalJob?: {
+    prescriptionVersionId?: number;
+    frameInventoryId?: number;
+    lensSeriesId?: number;
+    availabilityOverrideDecision?: "READY_STOCK" | "RX" | "REVIEW_REQUIRED";
+    availabilityOverrideReason?: string;
+  };
+
+  prescription?: {
+    source: "IN_HOUSE" | "EXTERNAL_DOCTOR" | "UPLOADED";
+    doctorName?: string;
+    rightSphere?: string;
+    rightCylinder?: string;
+    rightAxis?: string;
+    rightAdd?: string;
+    rightPD?: string;
+    rightHeight?: string;
+    rightPrism?: string;
+    leftSphere?: string;
+    leftCylinder?: string;
+    leftAxis?: string;
+    leftAdd?: string;
+    leftPD?: string;
+    leftHeight?: string;
+    leftPrism?: string;
+    distanceNotes?: string;
+    nearNotes?: string;
+    doctorNotes?: string;
+  };
 
   items: CreateOrderItemDTO[];
 }

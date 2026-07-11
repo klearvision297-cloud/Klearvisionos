@@ -1,4 +1,4 @@
-import type { BillingItem } from "../../../pages/Billing/ProductTable";
+import type { BillingItem } from "../types/billing";
 
 export type DiscountMode =
   | "amount"
@@ -44,7 +44,7 @@ export function calculateBill(
 
   let sgst = 0;
 
-  let igst = 0;
+  const igst = 0;
 
   for (const row of items) {
     const price =

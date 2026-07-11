@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
-import MainLayout from "./features/customers/components/layout/MainLayout";
-
-import Dashboard from "./pages/Dashboard";
-import Customers from "./pages/Customers";
-
-import InventoryPage from "./features/inventory/pages";
-import StockHistory from "./features/inventory/components/StockHistory";
-import Billing from "./pages/Billing";
+import Billing from "./features/billing";
+import Customers from "./features/customer";
+import Dashboard from "./features/dashboard";
+import InventoryPage, { StockHistoryPage } from "./features/inventory";
+import OpticalJobsPage, { LabDispatchPage } from "./features/optical";
+import PurchasesPage from "./features/purchase";
+import InvoiceRegisterPage from "./features/invoice";
+import SuppliersPage from "./features/supplier";
+import CustomerDuesPage from "./features/dues";
+import { MainLayout } from "./shared/layout";
 
 export default function AppRoutes() {
   return (
@@ -31,13 +33,24 @@ export default function AppRoutes() {
 
           <Route
             path="/stock-history"
-            element={<StockHistory />}
+            element={<StockHistoryPage />}
           />
 
           <Route
             path="/billing"
             element={<Billing />}
           />
+
+          <Route
+            path="/suppliers"
+            element={<SuppliersPage />}
+          />
+
+          <Route path="/purchases" element={<PurchasesPage />} />
+          <Route path="/invoices" element={<InvoiceRegisterPage />} />
+          <Route path="/customer-dues" element={<CustomerDuesPage />} />
+          <Route path="/optical-jobs" element={<OpticalJobsPage />} />
+          <Route path="/lab-dispatch" element={<LabDispatchPage />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>

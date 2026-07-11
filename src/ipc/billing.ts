@@ -7,10 +7,11 @@ export function registerBillingIpc() {
   ipcMain.handle(
     "billing:create",
     async (_, order) => {
+      console.log("[billing] IPC create invoked", order?.workflowType, order?.transactionKey);
       try {
         return service.create(order);
       } catch (error) {
-        console.error(error);
+        console.error("[billing] IPC create failed", error);
 
         return {
           success: false,

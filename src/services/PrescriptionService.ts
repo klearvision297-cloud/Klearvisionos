@@ -1,0 +1,2 @@
+import { PrescriptionRepository, type PrescriptionData } from "../repositories/PrescriptionRepository";
+export class PrescriptionService { private repository = new PrescriptionRepository(); create(data: PrescriptionData) { if (!data.customerId) throw new Error("Select a customer before saving a prescription."); return this.repository.create(data); } getByCustomer(customerId: number) { return this.repository.getByCustomer(customerId); } }

@@ -49,6 +49,10 @@ export interface Customer {
 
   totalSpent: number;
 
+  outstanding: number;
+
+  lastVisit: string | null;
+
   createdAt: string;
 
   updatedAt: string;

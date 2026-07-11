@@ -31,6 +31,8 @@ export interface Inventory {
 
   currentStock: number;
 
+  reservedStock: number;
+
   minimumStock: number;
 
   unit: string;
@@ -112,6 +114,10 @@ export interface StockHistoryItem {
   reason?: string;
 
   remarks?: string;
+
+  referenceType?: string;
+
+  referenceNumber?: string;
 
   createdAt: string;
 }

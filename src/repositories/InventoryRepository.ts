@@ -1,5 +1,5 @@
 import { getDatabase } from "../database/db";
-import { CreateInventoryDTO } from "../types/inventory";
+import { CreateInventoryDTO, Inventory } from "../types/inventory";
 
 export class InventoryRepository {
   private db = getDatabase();
@@ -97,10 +97,10 @@ export class InventoryRepository {
     });
   }
 
-  findById(id: number) {
+  findById(id: number): Inventory | undefined {
     return this.db
       .prepare("SELECT * FROM inventory WHERE id = ?")
-      .get(id);
+      .get(id) as Inventory | undefined;
   }
 
   findByItemCode(itemCode: string) {

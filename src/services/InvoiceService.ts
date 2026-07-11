@@ -1,0 +1,2 @@
+import { InvoiceRepository } from "../repositories/InvoiceRepository";
+export class InvoiceService { private repository=new InvoiceRepository(); list(search?:string){return this.repository.list(search);} detail(id:number){return this.repository.detail(id);} receivePayment(id:number,amount:number,method:string,remarks?:string,reference?:string){return this.repository.addPayment(id,amount,method,remarks,reference);} cancel(id:number,reason:string){ if(!reason.trim()) throw new Error("A cancellation reason is required."); return this.repository.cancel(id,reason.trim()); } }

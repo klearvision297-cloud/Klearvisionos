@@ -15,7 +15,9 @@ declare module "better-sqlite3" {
     }
   }
 
-  const Database: typeof Database.Database;
+  const Database: {
+    new(filename: string): Database.Database;
+  };
 
   export = Database;
 }
