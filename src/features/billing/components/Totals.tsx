@@ -2,38 +2,19 @@ import { useMemo, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { Card, Input } from "../../../components/ui";
 import type { BillingItem } from "../types/billing";
+import type { LensSeriesOption } from "./LensSelector";
+import { calculateBill } from "../utils/billingCalculator";
 
-type TotalsProps = { items: BillingItem[] };
+type TotalsProps = { items: BillingItem[]; selectedLens?: LensSeriesOption | null };
 
-export default function Totals({ items }: TotalsProps) {
+export default function Totals({ items, selectedLens }: TotalsProps) {
   const [discountMode, setDiscountMode] = useState<"amount" | "percent">(
     "amount",
   );
   const [discountValue, setDiscountValue] = useState(0);
   const summary = useMemo(() => {
-    const subtotal = items.reduce(
-      (sum, row) => sum + row.item.sellingPrice * row.quantity,
-      0,
-    );
-    const gst = items.reduce(
-      (sum, row) =>
-        sum + row.item.sellingPrice * row.quantity * (row.item.gstRate / 100),
-      0,
-    );
-    const discount =
-      discountMode === "percent"
-        ? subtotal * (discountValue / 100)
-        : discountValue;
-    const beforeRound = subtotal + gst - discount;
-    const grandTotal = Math.round(beforeRound);
-    return {
-      subtotal,
-      gst,
-      discount,
-      grandTotal,
-      roundOff: grandTotal - beforeRound,
-    };
-  }, [items, discountMode, discountValue]);
+    return calculateBill(items, discountMode, discountValue, "included", selectedLens ? [{ sellingPrice: selectedLens.defaultSellingPrice }] : []);
+  }, [items, discountMode, discountValue, selectedLens]);
 
   return (
     <Card className="billing-card billing-totals">

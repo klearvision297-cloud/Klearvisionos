@@ -224,7 +224,7 @@ export default function DrawerBody({
           emptyText="Retail invoices for this customer will appear here."
           rows={orders.map((order) => ({
             title: order.orderNumber,
-            detail: `${new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(order.orderDate))} · ${order.paymentStatus}`,
+            detail: [new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(order.orderDate)), order.paymentStatus, order.lensSeries ? `Lens: ${order.lensSeries}` : null].filter(Boolean).join(" · "),
             amount: `₹${order.totalAmount.toFixed(2)}`,
           }))}
         />

@@ -4,7 +4,7 @@ import Billing from "./features/billing";
 import Customers from "./features/customer";
 import Dashboard from "./features/dashboard";
 import InventoryPage, { StockHistoryPage } from "./features/inventory";
-import OpticalJobsPage, { LabDispatchPage } from "./features/optical";
+import OpticalJobsPage, { LabDispatchPage, LabReceivingPage, LensMasterPage } from "./features/optical";
 import PurchasesPage from "./features/purchase";
 import InvoiceRegisterPage from "./features/invoice";
 import SuppliersPage from "./features/supplier";
@@ -50,7 +50,9 @@ export default function AppRoutes() {
           <Route path="/invoices" element={<InvoiceRegisterPage />} />
           <Route path="/customer-dues" element={<CustomerDuesPage />} />
           <Route path="/optical-jobs" element={<OpticalJobsPage />} />
+          <Route path="/lens-catalogue" element={<LensMasterPage />} />
           <Route path="/lab-dispatch" element={<LabDispatchPage />} />
+          <Route path="/lab-receiving" element={<LabReceivingPage />} />
         </Routes>
       </MainLayout>
     </BrowserRouter>

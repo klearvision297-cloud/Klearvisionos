@@ -9,6 +9,7 @@ export interface InvoiceRegisterRow {
   paidAmount: number;
   balanceAmount: number;
   paymentStatus: string;
+  lensSeries?: string | null;
 }
 
 export interface PaymentHistoryRow {

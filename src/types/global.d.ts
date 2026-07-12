@@ -21,10 +21,12 @@ import type {
   BulkUpdateOpticalJobsDTO,
   CreateAvailabilityProfileDTO,
   CreateLensSeriesDTO,
-  CreateOpticalJobDTO,
+  CompleteQualityInspectionDTO,
+  CreateRepairJobDTO,
   DispatchLabOrdersDTO,
   EvaluateAvailabilityDTO,
   LensSeries,
+  LensCatalogueSummary,
   LensSeriesQuery,
   NotificationItem,
   OpticalJobDetail,
@@ -35,6 +37,10 @@ import type {
   PaginatedResult,
   ReceiveLabOrderDTO,
   UpdateOpticalJobDTO,
+  UpdateRepairJobDTO,
+  RepairJob,
+  OpticalJobDashboard,
+  LabReceivingSummary,
 } from "./optical";
 import type { PrescriptionData } from "../repositories/PrescriptionRepository";
 import type { InvoiceRegisterRow, PaymentCollectionSummary, PaymentHistoryRow, RetailDashboardSummary } from "./report";
@@ -162,6 +168,7 @@ declare global {
       notifyCustomer(jobId: number, notes?: string): Promise<{ success: boolean }>;
       recordWarranty(jobId: number, warrantyUntil: string, notes?: string): Promise<{ success: boolean }>;
       getLensSeries(query?: LensSeriesQuery): Promise<PaginatedResult<LensSeries>>;
+      getLensCatalogueSummary(): Promise<LensCatalogueSummary>;
       createLensSeries(data: CreateLensSeriesDTO): Promise<LensSeries>;
       updateLensSeries(id: number, data: CreateLensSeriesDTO): Promise<LensSeries>;
       duplicateLensSeries(id: number): Promise<LensSeries>;
@@ -172,10 +179,17 @@ declare global {
       deleteAvailabilityProfile(id: number): Promise<{ success: boolean }>;
       evaluateAvailability(data: EvaluateAvailabilityDTO): Promise<AvailabilityEvaluation>;
       getTimeline(jobId: number): Promise<import("./optical").JobTimelineEvent[]>;
-      createJob(data: CreateOpticalJobDTO): Promise<{ success: boolean; id: number; jobNumber: string; availabilityDecision: string; availability: AvailabilityEvaluation }>;
+      getDashboard(): Promise<OpticalJobDashboard>;
+      getRepairJobs(search?: string): Promise<RepairJob[]>;
+      getRepairJob(id: number): Promise<RepairJob & { timeline: import("./optical").JobTimelineEvent[] }>;
+      createRepairJob(data: CreateRepairJobDTO): Promise<{ success: boolean; id: number; jobNumber: string }>;
+      updateRepairJob(id: number, data: UpdateRepairJobDTO): Promise<{ success: boolean }>;
       getLabJobs(query: OpticalLabJobQuery): Promise<OpticalLabJob[]>;
       dispatchLabJobs(data: DispatchLabOrdersDTO): Promise<{ success: boolean }>;
       receiveLabJob(jobId: number, data: ReceiveLabOrderDTO): Promise<{ success: boolean }>;
+      completeQualityInspection(jobId: number, data: CompleteQualityInspectionDTO): Promise<{ success: boolean }>;
+      returnForRemake(jobId: number, performedBy?: string): Promise<{ success: boolean }>;
+      getLabReceivingSummary(): Promise<LabReceivingSummary>;
       search(query: string): Promise<OpticalSearchResult[]>;
       getNotifications(): Promise<NotificationItem[]>;
       markNotificationRead(id: number): Promise<{ success: boolean }>;

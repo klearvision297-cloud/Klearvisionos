@@ -3,6 +3,7 @@ import { CreditCard, Landmark, Smartphone, Wallet } from "lucide-react";
 import { Button, Card, Input } from "../../../components/ui";
 import type { BillingItem } from "../types/billing";
 import { calculateBill } from "../utils/billingCalculator";
+import type { LensSeriesOption } from "./LensSelector";
 
 type PaymentMethod = "Cash" | "UPI" | "Card" | "Bank";
 
@@ -14,6 +15,7 @@ type PaymentPanelProps = {
   setReceived: React.Dispatch<React.SetStateAction<number>>;
   onSave: () => void;
   isSaving: boolean;
+  selectedLens?: LensSeriesOption | null;
 };
 
 const methods: {
@@ -35,10 +37,11 @@ export default function PaymentPanel({
   setReceived,
   onSave,
   isSaving,
+  selectedLens,
 }: PaymentPanelProps) {
   const summary = useMemo(
-    () => calculateBill(items, "amount", 0, "included"),
-    [items],
+    () => calculateBill(items, "amount", 0, "included", selectedLens ? [{ sellingPrice: selectedLens.defaultSellingPrice }] : []),
+    [items, selectedLens],
   );
   const outstanding = Math.max(0, summary.grandTotal - received);
   const change =

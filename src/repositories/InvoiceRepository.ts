@@ -16,7 +16,7 @@ export class InvoiceRepository {
     const row = this.db.prepare(`SELECT o.*, c.name customerName, c.mobile customerMobile, c.customerCode, (SELECT workflowType FROM optical_jobs oj WHERE oj.orderId=o.id LIMIT 1) jobWorkflow FROM orders o JOIN customers c ON c.id=o.customerId WHERE o.id=?`).get(id) as Record<string, unknown> | undefined;
     if (!row) return null;
     const base = this.listByRow(row);
-    const items = this.db.prepare("SELECT id, inventoryId, itemCode, itemType, brand, category, model, color, size, quantity, sellingPrice, discount, total, remarks FROM order_items WHERE orderId=? ORDER BY id").all(id) as InvoiceDetail["items"];
+    const items = this.db.prepare("SELECT id, inventoryId, lensSeriesId, itemCode, itemType, brand, category, model, color, size, quantity, sellingPrice, discount, total, remarks FROM order_items WHERE orderId=? ORDER BY id").all(id) as InvoiceDetail["items"];
     const payments = this.db.prepare("SELECT id, paymentNumber, paymentDate, paymentMethod, amount, remarks, referenceNumber, recordedBy FROM payments WHERE orderId=? ORDER BY paymentDate, id").all(id) as InvoiceDetail["payments"];
     const events = this.db.prepare("SELECT id,eventType,notes,createdAt FROM invoice_events WHERE orderId=? ORDER BY createdAt,id").all(id) as InvoiceDetail["timeline"];
     const created = { id: -id, eventType:"INVOICE_CREATED", notes:"Invoice created", createdAt: row.createdAt as string };

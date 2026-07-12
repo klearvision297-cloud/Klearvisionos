@@ -1,6 +1,12 @@
 export type OpticalWorkflowType = "RETAIL" | "PRESCRIPTION" | "REPAIR";
 export type AvailabilityDecision = "READY_STOCK" | "RX" | "REVIEW_REQUIRED";
 export type OpticalJobStatus =
+  | "NEW"
+  | "WAITING_FOR_LENS"
+  | "READY_FOR_DISPATCH"
+  | "AT_LAB"
+  | "QC_PENDING"
+  | "REMAKE_REQUIRED"
   | "CONFIRMED"
   | "LAB_PENDING"
   | "DISPATCHED"
@@ -111,11 +117,13 @@ export interface LensFeatures {
 export interface LensSeriesInput extends LensFeatures {
   brand: string;
   series: string;
+  category?: string;
   supplierId?: number;
   material?: string;
   lensIndex?: string;
   design?: string;
   coating?: string;
+  tintName?: string;
   availabilityProfileId?: number;
   defaultTurnaroundDays: number;
   defaultCost: number;
@@ -140,6 +148,8 @@ export interface LensSeries extends LensSeriesInput {
   rulesJson?: string | null;
   createdAt: string;
   updatedAt: string;
+  usageCount?: number;
+  lastUsedAt?: string | null;
 }
 
 export interface LensSeriesQuery {
@@ -147,9 +157,19 @@ export interface LensSeriesQuery {
   status?: "ACTIVE" | "INACTIVE" | "ALL";
   supplierId?: number;
   availabilityProfileId?: number;
-  sort?: "BRAND" | "SERIES" | "PRICE" | "UPDATED";
+  category?: string;
+  brand?: string;
+  recentlyUsed?: boolean;
+  sort?: "BRAND" | "SERIES" | "PRICE" | "UPDATED" | "CREATED" | "RECENTLY_USED";
   page?: number;
   pageSize?: number;
+}
+
+export interface LensCatalogueSummary {
+  activeCount: number;
+  inactiveCount: number;
+  mostUsedBrand: string | null;
+  mostUsedSeries: string | null;
 }
 
 export interface AvailabilityEvaluation {
@@ -174,6 +194,9 @@ export interface CreateOpticalJobDTO {
   frameInventoryId?: number;
   lensSeriesId?: number;
   workflowType: "PRESCRIPTION" | "REPAIR";
+  expectedDeliveryDate?: string;
+  expectedDeliveryTime?: string;
+  deliveryReason?: string;
   availabilityOverrideDecision?: AvailabilityDecision;
   availabilityOverrideReason?: string;
 }
@@ -196,7 +219,7 @@ export interface OpticalJob {
   lensSeries?: string | null;
   supplierId?: number | null;
   supplierName?: string | null;
-  labOrderId?: number | null;
+  assignedLab?: string | null;
   expectedDeliveryDate?: string | null;
   promisedDeliveryDate?: string | null;
   deliveryOverrideReason?: string | null;
@@ -213,6 +236,7 @@ export interface OpticalJob {
   remakeCount?: number;
   deliveryState: DeliveryState;
   timelinePreview?: string | null;
+  frameDescription?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -225,6 +249,52 @@ export interface OpticalJobQuery {
   deliveryState?: DeliveryState | "ALL";
   page?: number;
   pageSize?: number;
+}
+
+export type RepairJobStatus = "NEW" | "IN_PROGRESS" | "READY" | "DELIVERED";
+
+export interface RepairJob {
+  id: number;
+  jobNumber: string;
+  customerId: number;
+  customerName: string;
+  customerPhone?: string | null;
+  itemReceived: string;
+  complaint: string;
+  charges: number;
+  status: RepairJobStatus;
+  createdAt: string;
+  updatedAt: string;
+  timelinePreview?: string | null;
+}
+
+export interface CreateRepairJobDTO {
+  customerId: number;
+  itemReceived: string;
+  complaint: string;
+  charges: number;
+}
+
+export interface UpdateRepairJobDTO {
+  status: RepairJobStatus;
+  notes?: string;
+  performedBy?: string;
+}
+
+export interface OpticalJobDashboard {
+  incompletePrescriptionJobs: number;
+  incompleteRepairJobs: number;
+  waitingForLens: number;
+  waitingAtLab: number;
+  readyForDelivery: number;
+}
+
+export interface LabReceivingSummary {
+  waitingAtLab: number;
+  receivedToday: number;
+  qcPending: number;
+  remakeRequired: number;
+  readyForDelivery: number;
 }
 
 export interface JobTimelineEvent {
@@ -266,18 +336,19 @@ export interface BulkUpdateOpticalJobsDTO {
 
 export interface OpticalLabJob extends OpticalJob {
   id: number;
-  labOrderNumber: string;
-  specialInstructions?: string | null;
+  prescriptionSummary?: string | null;
 }
 
 export interface OpticalLabJobQuery {
   stage: "DISPATCH" | "RECEIVING";
   supplierId?: number;
   search?: string;
+  status?: "AT_LAB" | "RECEIVED_TODAY" | "QC_PENDING" | "REMAKE_REQUIRED" | "READY_FOR_DELIVERY";
 }
 
 export interface DispatchLabOrdersDTO {
   jobIds: number[];
+  assignedLab?: string;
   dispatchDate?: string;
   courier?: string;
   trackingNumber?: string;
@@ -286,8 +357,17 @@ export interface DispatchLabOrdersDTO {
 }
 
 export interface ReceiveLabOrderDTO {
-  inspection: "ACCEPT" | "REJECT" | "REMAKE";
-  notes?: string;
+  remarks?: string;
+  performedBy?: string;
+}
+
+export type QcFailureReason = "WRONG_POWER" | "WRONG_LENS" | "WRONG_FRAME" | "SCRATCHED_LENS" | "DAMAGED_FRAME" | "COATING_DEFECT" | "OTHER";
+
+export interface CompleteQualityInspectionDTO {
+  checklist: Record<string, boolean>;
+  remarks?: string;
+  result: "PASS" | "FAIL";
+  failureReason?: QcFailureReason;
   performedBy?: string;
 }
 

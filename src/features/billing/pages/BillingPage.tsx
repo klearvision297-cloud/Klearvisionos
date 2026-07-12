@@ -41,6 +41,9 @@ export default function Billing() {
   const [availability, setAvailability] = useState<AvailabilityEvaluation | null>(null);
   const [availabilityOverrideDecision, setAvailabilityOverrideDecision] = useState<AvailabilityDecision | undefined>();
   const [availabilityOverrideReason, setAvailabilityOverrideReason] = useState("");
+  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
+  const [expectedDeliveryTime, setExpectedDeliveryTime] = useState("");
+  const [deliveryReason, setDeliveryReason] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   function handleSelectCustomer(customer: Customer) {
@@ -76,6 +79,9 @@ export default function Billing() {
       availability,
       availabilityOverrideDecision,
       availabilityOverrideReason,
+      expectedDeliveryDate,
+      expectedDeliveryTime,
+      deliveryReason,
     );
 
     setIsSaving(false);
@@ -90,6 +96,9 @@ export default function Billing() {
     setAvailability(null);
     setAvailabilityOverrideDecision(undefined);
     setAvailabilityOverrideReason("");
+    setExpectedDeliveryDate("");
+    setExpectedDeliveryTime("");
+    setDeliveryReason("");
   }
 
   async function handleCreateCustomer(
@@ -255,8 +264,14 @@ export default function Billing() {
               onAvailabilityOverrideDecision={setAvailabilityOverrideDecision}
               onAvailabilityOverrideReason={setAvailabilityOverrideReason}
               received={receivedAmount}
+              expectedDeliveryDate={expectedDeliveryDate}
+              expectedDeliveryTime={expectedDeliveryTime}
+              deliveryReason={deliveryReason}
+              onExpectedDeliveryDate={setExpectedDeliveryDate}
+              onExpectedDeliveryTime={setExpectedDeliveryTime}
+              onDeliveryReason={setDeliveryReason}
             />
-            <Totals items={billingItems} />
+            <Totals items={billingItems} selectedLens={workflowType === "PRESCRIPTION" ? selectedLens : null} />
             <PaymentPanel
               items={billingItems}
               paymentMethod={paymentMethod}
@@ -265,6 +280,7 @@ export default function Billing() {
               setReceived={setReceivedAmount}
               onSave={handleSaveBill}
               isSaving={isSaving}
+              selectedLens={workflowType === "PRESCRIPTION" ? selectedLens : null}
             />
           </aside>
         </div>

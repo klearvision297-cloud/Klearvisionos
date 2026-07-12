@@ -54,16 +54,28 @@ export class OrderService {
 
     const workflowType = order.workflowType ?? "RETAIL";
     const reservedFrameId = workflowType === "PRESCRIPTION" ? order.opticalJob?.frameInventoryId : undefined;
-    const shouldCreateOpticalJob = workflowType !== "RETAIL";
+    // Repair work is created manually from the Optical Jobs workspace. Only a
+    // prescription invoice owns an automatic prescription job.
+    const shouldCreateOpticalJob = workflowType === "PRESCRIPTION";
 
     if (workflowType === "PRESCRIPTION" && !order.prescriptionId && !order.prescription) {
       throw new Error("A prescription is required for prescription spectacles.");
+    }
+    if (workflowType === "PRESCRIPTION" && !order.opticalJob?.frameInventoryId) {
+      throw new Error("A frame is required for prescription billing.");
+    }
+    if (workflowType === "PRESCRIPTION" && !order.opticalJob?.lensSeriesId) {
+      throw new Error("A lens catalogue item is required for prescription billing.");
+    }
+    if (workflowType === "PRESCRIPTION" && !order.opticalJob?.expectedDeliveryDate) {
+      throw new Error("Expected delivery date is required for prescription billing.");
     }
 
     // Check stock before saving. A selected prescription frame is reserved by the job,
     // while all other sold items are deducted by the invoice.
     const quantitiesByInventory = new Map<number, number>();
     for (const orderItem of order.items) {
+      if (!orderItem.inventoryId) continue;
       if (!Number.isInteger(orderItem.quantity) || orderItem.quantity < 1) {
         throw new Error(`Quantity for ${orderItem.itemCode} must be a whole number of at least 1.`);
       }
@@ -72,6 +84,27 @@ export class OrderService {
         (quantitiesByInventory.get(orderItem.inventoryId) ?? 0) + orderItem.quantity,
       );
     }
+
+    const lens = workflowType === "PRESCRIPTION"
+      ? this.opticalService.getBillableLens(order.opticalJob!.lensSeriesId!)
+      : undefined;
+    const orderItems = lens
+      ? [...order.items, {
+          lensSeriesId: lens.id,
+          itemCode: `LENS-${lens.id}`,
+          itemType: "Lens",
+          brand: lens.brand,
+          category: lens.category ?? null,
+          model: lens.series,
+          gstRate: 0,
+          quantity: 1,
+          purchasePrice: lens.defaultCost,
+          sellingPrice: lens.defaultSellingPrice,
+          discount: 0,
+          total: lens.defaultSellingPrice,
+          remarks: lens.internalNotes,
+        }]
+      : order.items;
 
     for (const [inventoryId, quantity] of quantitiesByInventory) {
       const inventory =
@@ -164,7 +197,7 @@ Only ${inventory.currentStock} item(s) available in stock.`
           transactionKey,
         },
 
-      items: order.items,
+      items: orderItems,
       reservedInventoryId: reservedFrameId,
     });
 
@@ -181,7 +214,10 @@ Only ${inventory.currentStock} item(s) available in stock.`
         prescription: order.prescription,
         frameInventoryId: reservedFrameId,
         lensSeriesId: order.opticalJob?.lensSeriesId,
-        workflowType: workflowType === "REPAIR" ? "REPAIR" : "PRESCRIPTION",
+        workflowType: "PRESCRIPTION",
+        expectedDeliveryDate: order.opticalJob?.expectedDeliveryDate,
+        expectedDeliveryTime: order.opticalJob?.expectedDeliveryTime,
+        deliveryReason: order.opticalJob?.deliveryReason,
         availabilityOverrideDecision: order.opticalJob?.availabilityOverrideDecision,
         availabilityOverrideReason: order.opticalJob?.availabilityOverrideReason,
       });

@@ -44,7 +44,8 @@ export class ReportRepository {
     const keyword = `%${search.trim()}%`;
     return this.db.prepare(`
       SELECT o.id, o.orderNumber, o.orderDate, o.customerId, c.name AS customerName,
-        c.mobile AS customerMobile, o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus
+        c.mobile AS customerMobile, o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus,
+        (SELECT ls.brand || ' ' || ls.series FROM order_items oi JOIN lens_series ls ON ls.id = oi.lensSeriesId WHERE oi.orderId = o.id LIMIT 1) AS lensSeries
       FROM orders o
       JOIN customers c ON c.id = o.customerId
       WHERE o.orderStatus <> 'Cancelled'
@@ -69,7 +70,8 @@ export class ReportRepository {
   getCustomerInvoices(customerId: number): InvoiceRegisterRow[] {
     return this.db.prepare(`
       SELECT o.id, o.orderNumber, o.orderDate, o.customerId, c.name AS customerName,
-        c.mobile AS customerMobile, o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus
+        c.mobile AS customerMobile, o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus,
+        (SELECT ls.brand || ' ' || ls.series FROM order_items oi JOIN lens_series ls ON ls.id = oi.lensSeriesId WHERE oi.orderId = o.id LIMIT 1) AS lensSeries
       FROM orders o
       JOIN customers c ON c.id = o.customerId
       WHERE o.customerId = ?
@@ -124,7 +126,8 @@ export class ReportRepository {
     if (!customer) return null;
     const invoices = this.db.prepare(`
       SELECT o.id, o.orderNumber, o.orderDate, o.customerId, c.name AS customerName, c.mobile AS customerMobile,
-        o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus
+        o.totalAmount, o.paidAmount, o.balanceAmount, o.paymentStatus,
+        (SELECT ls.brand || ' ' || ls.series FROM order_items oi JOIN lens_series ls ON ls.id = oi.lensSeriesId WHERE oi.orderId = o.id LIMIT 1) AS lensSeries
       FROM orders o JOIN customers c ON c.id = o.customerId
       WHERE o.customerId = ? AND o.orderStatus <> 'Cancelled' AND o.balanceAmount > 0
       ORDER BY o.orderDate DESC, o.id DESC

@@ -29,6 +29,9 @@ export async function saveBill(
   availability?: AvailabilityEvaluation | null,
   availabilityOverrideDecision?: AvailabilityDecision,
   availabilityOverrideReason?: string,
+  expectedDeliveryDate?: string,
+  expectedDeliveryTime?: string,
+  deliveryReason?: string,
 ) {
   console.log("[billing] saveBill start", {
     workflowType,
@@ -73,6 +76,10 @@ export async function saveBill(
       toast.error("Please select a lens series for the prescription spectacle job.");
       return false;
     }
+    if (!expectedDeliveryDate) {
+      toast.error("Expected delivery date is required for prescription billing.");
+      return false;
+    }
 
     if (!availability) {
       console.log("[billing] Availability not ready yet; deferring to backend evaluation");
@@ -83,12 +90,7 @@ export async function saveBill(
     }
   }
 
-  const summary = calculateBill(
-    items,
-    "amount",
-    0,
-    "included"
-  );
+  const summary = calculateBill(items, "amount", 0, "included", selectedLens ? [{ sellingPrice: selectedLens.defaultSellingPrice }] : []);
 
   if (!Number.isFinite(received) || received <= 0) {
     toast.error("Enter a received payment amount greater than zero.");
@@ -126,13 +128,16 @@ export async function saveBill(
           lensSeriesId: selectedLens?.id,
           availabilityOverrideDecision,
           availabilityOverrideReason: availabilityOverrideReason?.trim() || undefined,
-          expectedDeliveryDate: availability?.expectedDeliveryDate,
+          expectedDeliveryDate,
+          expectedDeliveryTime: expectedDeliveryTime || undefined,
+          deliveryReason: deliveryReason?.trim() || undefined,
         }
       : undefined,
 
     gstMode: "included",
 
     orderDate: new Date().toISOString(),
+    deliveryDate: workflowType === "PRESCRIPTION" ? `${expectedDeliveryDate}${expectedDeliveryTime ? `T${expectedDeliveryTime}` : ""}` : undefined,
 
     subtotal: summary.subtotal,
 

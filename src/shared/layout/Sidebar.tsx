@@ -11,6 +11,7 @@ import {
   Settings,
   Glasses,
   Send,
+  ClipboardCheck,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
@@ -52,9 +53,19 @@ const menuItems = [
     path: "/optical-jobs",
   },
   {
+    icon: Glasses,
+    label: "Lens Catalogue",
+    path: "/lens-catalogue",
+  },
+  {
     icon: Send,
     label: "Lab Dispatch",
     path: "/lab-dispatch",
+  },
+  {
+    icon: ClipboardCheck,
+    label: "Lab Receiving",
+    path: "/lab-receiving",
   },
   {
     icon: History,

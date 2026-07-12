@@ -28,7 +28,8 @@ export interface CreateOrderData {
 }
 
 export interface CreateOrderItemData {
-  inventoryId: number;
+  inventoryId?: number;
+  lensSeriesId?: number;
 
   itemCode: string;
   itemType: string;
@@ -134,7 +135,7 @@ export class OrderRepository {
     console.log("[billing] Order row created", { orderId });
     for (const item of data.items) {
       this.createOrderItem(orderId, item);
-      if (item.inventoryId !== data.reservedInventoryId) {
+      if (item.inventoryId && item.inventoryId !== data.reservedInventoryId) {
         console.log("[billing] Reducing inventory", { inventoryId: item.inventoryId, quantity: item.quantity });
         this.reduceInventoryStock(item.inventoryId, item.quantity, data.order.orderNumber);
       }
@@ -223,6 +224,7 @@ export class OrderRepository {
       INSERT INTO order_items (
         orderId,
         inventoryId,
+        lensSeriesId,
         itemCode,
         itemType,
         brand,
@@ -243,14 +245,15 @@ export class OrderRepository {
         updatedAt
       )
       VALUES (
-        ?,?,?,?,?,?,?,?,?,?,
+        ?,?,?,?,?,?,?,?,?,?,?,
         ?,?,?,?,?,?,?,?,?,?
       )
     `
       )
       .run(
         orderId,
-        item.inventoryId,
+        item.inventoryId ?? null,
+        item.lensSeriesId ?? null,
         item.itemCode,
         item.itemType,
         item.brand ?? null,

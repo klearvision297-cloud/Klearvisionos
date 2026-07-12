@@ -5,6 +5,7 @@ import type {
   AvailabilityEvaluation,
   AvailabilityProfileRules,
   BulkUpdateOpticalJobsDTO,
+  CompleteQualityInspectionDTO,
   CreateAvailabilityProfileDTO,
   CreateLensSeriesDTO,
   CreateOpticalJobDTO,
@@ -19,7 +20,6 @@ import type {
   OpticalJobDetail,
   OpticalJobQuery,
   OpticalJobStatus,
-  PrescriptionForAvailability,
   ReceiveLabOrderDTO,
   UpdateOpticalJobDTO,
 } from "../types/optical";
@@ -42,22 +42,6 @@ const validConditionFields: AvailabilityConditionField[] = [
   "leftPrism",
 ];
 const validPriorities: JobPriority[] = ["LOW", "NORMAL", "HIGH", "URGENT"];
-const jobTransitions: Record<OpticalJobStatus, OpticalJobStatus[]> = {
-  CONFIRMED: ["LAB_PENDING", "READY_FOR_FITTING", "ON_HOLD", "CANCELLED"],
-  LAB_PENDING: ["DISPATCHED", "ON_HOLD", "REMAKE", "CANCELLED"],
-  DISPATCHED: ["RECEIVED", "ON_HOLD", "REMAKE"],
-  RECEIVED: ["READY_FOR_FITTING", "FITTING", "ON_HOLD", "REMAKE"],
-  READY_FOR_FITTING: ["FITTING", "ON_HOLD", "CANCELLED", "REMAKE"],
-  FITTING: ["QUALITY_CHECK", "ON_HOLD", "REMAKE"],
-  QUALITY_CHECK: ["READY_FOR_DELIVERY", "FITTING", "REMAKE", "ON_HOLD"],
-  READY_FOR_DELIVERY: ["DELIVERED", "ON_HOLD"],
-  DELIVERED: ["CLOSED", "REMAKE"],
-  CLOSED: [],
-  ON_HOLD: ["LAB_PENDING", "READY_FOR_FITTING", "FITTING", "CANCELLED", "REMAKE"],
-  CANCELLED: [],
-  REMAKE: ["DISPATCHED", "LAB_PENDING", "READY_FOR_FITTING", "ON_HOLD"],
-};
-
 function dateOnly(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -94,15 +78,33 @@ export class OpticalService {
     return this.repository.getLensSeries(query);
   }
 
+  getLensCatalogueSummary() {
+    return this.repository.getLensCatalogueSummary();
+  }
+
   createLensSeries(data: CreateLensSeriesDTO) {
     this.validateLensSeries(data);
-    return this.repository.createLensSeries(data);
+    try {
+      return this.repository.createLensSeries(data);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("UNIQUE")) {
+        throw new Error("A lens series with this brand and name already exists.");
+      }
+      throw error;
+    }
   }
 
   updateLensSeries(id: number, data: CreateLensSeriesDTO) {
     if (!this.repository.findLensSeries(id)) throw new Error("Lens series not found.");
     this.validateLensSeries(data);
-    return this.repository.updateLensSeries(id, data);
+    try {
+      return this.repository.updateLensSeries(id, data);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("UNIQUE")) {
+        throw new Error("A lens series with this brand and name already exists.");
+      }
+      throw error;
+    }
   }
 
   duplicateLensSeries(id: number) {
@@ -126,6 +128,12 @@ export class OpticalService {
     if (!this.repository.findLensSeries(id)) throw new Error("Lens series not found.");
     this.repository.setLensSeriesActive(id, isActive);
     return { success: true };
+  }
+
+  getBillableLens(id: number) {
+    const lens = this.repository.findLensSeries(id);
+    if (!lens || !lens.isActive) throw new Error("The selected lens is inactive or unavailable.");
+    return lens;
   }
 
   getAvailabilityProfiles(includeInactive?: boolean) {
@@ -208,11 +216,17 @@ export class OpticalService {
   }
 
   createJob(data: CreateOpticalJobDTO) {
+    if (data.workflowType !== "PRESCRIPTION") {
+      throw new Error("Repair jobs are created through the repair-job workflow.");
+    }
     if (data.workflowType === "PRESCRIPTION" && !data.prescriptionId) {
       throw new Error("A saved prescription is required for a prescription spectacle job.");
     }
     if (data.workflowType === "PRESCRIPTION" && !data.lensSeriesId) {
       throw new Error("A lens series is required for a prescription spectacle job.");
+    }
+    if (data.workflowType === "PRESCRIPTION" && !data.expectedDeliveryDate) {
+      throw new Error("Expected delivery date is required for prescription billing.");
     }
 
     const evaluation: AvailabilityEvaluation = data.lensSeriesId
@@ -231,11 +245,8 @@ export class OpticalService {
       throw new Error("Lens availability requires a documented override before the job can be confirmed.");
     }
     const decision = override ?? evaluation.decision;
-    const expectedDeliveryDate = evaluation.expectedDeliveryDate;
+    const expectedDeliveryDate = data.expectedDeliveryDate ?? evaluation.expectedDeliveryDate;
     const lens = data.lensSeriesId ? this.repository.findLensSeries(data.lensSeriesId) : undefined;
-    if (data.workflowType === "PRESCRIPTION" && decision === "RX" && !lens?.supplierId) {
-      throw new Error("The selected RX lens series does not have a preferred supplier.");
-    }
     const job = this.repository.createJob(data, {
       decision,
       expectedDeliveryDate,
@@ -256,6 +267,15 @@ export class OpticalService {
         performedBy,
       );
     }
+    if (data.expectedDeliveryDate) {
+      this.repository.addTimelineEvent(
+        job.id,
+        "DELIVERY_SCHEDULED",
+        `Expected delivery: ${data.expectedDeliveryDate}${data.expectedDeliveryTime ? ` ${data.expectedDeliveryTime}` : ""}.`,
+        performedBy,
+        data.deliveryReason,
+      );
+    }
     if (data.frameInventoryId) {
       this.repository.reserveFrame(job.id, data.frameInventoryId);
       this.repository.addTimelineEvent(job.id, "FRAME_RESERVED", "Selected frame reserved for this job.", performedBy);
@@ -269,18 +289,6 @@ export class OpticalService {
         performedBy,
       );
       this.repository.addTimelineEvent(job.id, "AVAILABILITY_OVERRIDDEN", `Availability changed to ${statusLabel(override)}.`, performedBy, data.availabilityOverrideReason);
-    }
-
-    if (data.workflowType === "PRESCRIPTION" && decision === "RX") {
-      const labOrder = this.repository.createLabOrder(job.id);
-      this.repository.addTimelineEvent(job.id, "LAB_ORDER_CREATED", `Lab order ${labOrder.labOrderNumber} created.`, performedBy);
-      this.repository.createNotification(
-        job.id,
-        "LAB_PENDING",
-        "Lab order pending dispatch",
-        `${job.jobNumber} is ready for lab dispatch.`,
-        `lab-pending:${job.id}`,
-      );
     }
 
     return { success: true, ...job, availabilityDecision: decision, availability: evaluation };
@@ -301,6 +309,35 @@ export class OpticalService {
     return { ...result, items };
   }
 
+  getDashboard() { return this.repository.getDashboard(); }
+  getLabReceivingSummary() { return this.repository.getLabReceivingSummary(); }
+
+  createRepairJob(data: import("../types/optical").CreateRepairJobDTO) {
+    if (!data.customerId) throw new Error("Customer is required for a repair job.");
+    if (!data.itemReceived.trim()) throw new Error("Item received is required.");
+    if (!data.complaint.trim()) throw new Error("Complaint is required.");
+    if (!Number.isFinite(data.charges) || data.charges < 0) throw new Error("Charges must be zero or greater.");
+    return { success: true, ...this.repository.createRepairJob(data) };
+  }
+
+  getRepairJobs(search?: string) { return this.repository.getRepairJobs(search); }
+
+  getRepairJob(id: number) {
+    const job = this.repository.getRepairJob(id);
+    if (!job) throw new Error("Repair job not found.");
+    return job;
+  }
+
+  updateRepairJob(id: number, data: import("../types/optical").UpdateRepairJobDTO) {
+    const job = this.repository.getRepairJob(id) as { status: import("../types/optical").RepairJobStatus } | undefined;
+    if (!job) throw new Error("Repair job not found.");
+    const next: Record<import("../types/optical").RepairJobStatus, import("../types/optical").RepairJobStatus[]> = { NEW: ["IN_PROGRESS"], IN_PROGRESS: ["READY"], READY: ["DELIVERED"], DELIVERED: [] };
+    if (!next[job.status].includes(data.status)) throw new Error("Repair jobs must follow NEW → IN_PROGRESS → READY → DELIVERED.");
+    this.repository.updateRepairJob(id, data.status);
+    this.repository.addRepairTimelineEvent(id, "STATUS_UPDATED", `Repair job marked ${statusLabel(data.status)}.`, data.performedBy ?? "Current User", data.notes);
+    return { success: true };
+  }
+
   getJobDetail(jobId: number): OpticalJobDetail {
     const job = this.repository.getJobDetail(jobId);
     if (!job) throw new Error("Optical job not found.");
@@ -319,7 +356,8 @@ export class OpticalService {
     if (data.promisedDeliveryDate && !data.deliveryOverrideReason?.trim() && !job.deliveryOverrideReason) {
       throw new Error("A reason is required when promising a delivery date.");
     }
-    if (data.status && data.status !== job.status && !jobTransitions[job.status].includes(data.status)) {
+    const prescriptionTransitions: Partial<Record<OpticalJobStatus, OpticalJobStatus[]>> = { NEW: ["WAITING_FOR_LENS"], WAITING_FOR_LENS: ["READY_FOR_DISPATCH"], READY_FOR_DISPATCH: [] };
+    if (data.status && data.status !== job.status && !(prescriptionTransitions[job.status] ?? []).includes(data.status)) {
       throw new Error(`Cannot move a ${statusLabel(job.status)} job directly to ${statusLabel(data.status)}.`);
     }
     this.repository.updateJob(jobId, data);
@@ -373,13 +411,17 @@ export class OpticalService {
   dispatchLabJobs(data: DispatchLabOrdersDTO) {
     if (!data.jobIds.length) throw new Error("Select at least one optical job awaiting dispatch.");
     const jobs = data.jobIds.map((jobId) => this.repository.findLabJob(jobId));
-    if (jobs.some((job) => !job || !["LAB_PENDING", "REMAKE"].includes(job.status))) {
+    if (jobs.some((job) => !job || job.status !== "READY_FOR_DISPATCH")) {
       throw new Error("Only optical jobs awaiting dispatch can be dispatched.");
+    }
+    if (!data.assignedLab?.trim() && jobs.some((job) => !job?.assignedLab?.trim())) {
+      throw new Error("Assign a lab before dispatching these optical jobs.");
     }
     this.repository.dispatchLabJobs({ ...data, jobIds: [...new Set(data.jobIds)] });
     for (const job of jobs) {
       if (!job) continue;
-      this.repository.addTimelineEvent(job.id, "DISPATCHED", `Lab order ${job.labOrderNumber} dispatched to ${job.supplierName ?? "the assigned supplier"}.`, data.performedBy ?? "Current User", data.remarks);
+      const lab = data.assignedLab?.trim() || job.assignedLab?.trim() || "the assigned lab";
+      this.repository.addTimelineEvent(job.id, "DISPATCHED", `Optical job dispatched to ${lab}.`, data.performedBy ?? "Current User", data.remarks);
     }
     return { success: true };
   }
@@ -387,23 +429,44 @@ export class OpticalService {
   receiveLabJob(jobId: number, data: ReceiveLabOrderDTO) {
     const job = this.repository.findLabJob(jobId);
     if (!job) throw new Error("Optical lab job not found.");
-    if (job.status !== "DISPATCHED") {
+    if (job.status !== "AT_LAB") {
       throw new Error("This optical job is not available for receiving.");
     }
     this.repository.receiveLabJob(jobId, data);
     const performedBy = data.performedBy ?? "Current User";
-    if (data.inspection === "ACCEPT") {
-      this.repository.addTimelineEvent(job.id, "RECEIVED", `Lab order ${job.labOrderNumber} received and accepted.`, performedBy, data.notes);
-      this.repository.createNotification(job.id, "LENS_READY", "Lens ready for frame fitting", `${job.jobNumber} lenses have been accepted and are ready for fitting.`, `lens-ready:${job.id}`);
+    this.repository.addTimelineEvent(job.id, "RECEIVED_FROM_LAB", `Optical job received from ${job.assignedLab ?? "the lab"}.`, performedBy, data.remarks);
+    this.repository.addTimelineEvent(job.id, "QC_PENDING", "Quality inspection is pending.", performedBy);
+    return { success: true };
+  }
+
+  completeQualityInspection(jobId: number, data: CompleteQualityInspectionDTO) {
+    const job = this.repository.findLabJob(jobId);
+    if (!job) throw new Error("Optical lab job not found.");
+    if (job.status !== "QC_PENDING") throw new Error("This optical job is not awaiting quality inspection.");
+    if (data.result === "FAIL" && !data.failureReason) throw new Error("A failure reason is required when QC fails.");
+    if (!data.checklist || (data.result === "PASS" && Object.values(data.checklist).some((checked) => !checked))) {
+      throw new Error("All inspection checklist items must pass before recording QC as passed.");
     }
-    if (data.inspection === "REJECT") {
-      this.repository.addTimelineEvent(job.id, "REJECTED", `Lab order ${job.labOrderNumber} was rejected during inspection.`, performedBy, data.notes);
-      this.repository.createNotification(job.id, "LAB_DELAY", "Lab order needs attention", `${job.jobNumber} was rejected at receiving.`, `lab-rejected:${job.id}`);
+    const performedBy = data.performedBy?.trim() || "Current User";
+    this.repository.completeQualityInspection(jobId, data);
+    if (data.result === "PASS") {
+      this.repository.addTimelineEvent(jobId, "QC_PASSED", "Quality inspection passed; job is ready for delivery.", performedBy, data.remarks);
+      this.repository.addTimelineEvent(jobId, "READY_FOR_DELIVERY", "Optical job marked ready for delivery.", performedBy);
+      this.repository.createNotification(jobId, "CUSTOMER_PICKUP", "Customer pickup ready", `${job.jobNumber} has passed QC and is ready for delivery.`, `pickup:${jobId}`);
+    } else {
+      const reason = data.failureReason;
+      if (!reason) throw new Error("A failure reason is required when QC fails.");
+      this.repository.addTimelineEvent(jobId, "QC_FAILED", `Quality inspection failed: ${reason.replaceAll("_", " ").toLowerCase()}.`, performedBy, data.remarks);
     }
-    if (data.inspection === "REMAKE") {
-      this.repository.addTimelineEvent(job.id, "REMAKE", `Remake requested for ${job.labOrderNumber}; it returned to the dispatch queue.`, performedBy, data.notes);
-      this.repository.createNotification(job.id, "LAB_DELAY", "Remake requested", `${job.jobNumber} requires a lab remake.`, `remake:${job.id}:${job.labOrderId}`);
-    }
+    return { success: true };
+  }
+
+  returnForRemake(jobId: number, performedBy?: string) {
+    const job = this.repository.findLabJob(jobId);
+    if (!job) throw new Error("Optical lab job not found.");
+    if (job.status !== "REMAKE_REQUIRED") throw new Error("This optical job is not awaiting a remake return.");
+    this.repository.returnForRemake(jobId);
+    this.repository.addTimelineEvent(jobId, "RETURNED_FOR_REMAKE", "QC failure returned to the lab dispatch queue for remake.", performedBy?.trim() || "Current User", job.remakeReason ?? undefined);
     return { success: true };
   }
 
@@ -466,8 +529,8 @@ export class OpticalService {
   }
 
   private getDeliveryState(job: Pick<OpticalJob, "status" | "expectedDeliveryDate" | "promisedDeliveryDate">): DeliveryState {
-    if (["RECEIVED", "READY_FOR_FITTING", "FITTING", "QUALITY_CHECK", "READY_FOR_DELIVERY", "DELIVERED", "CLOSED"].includes(job.status)) return "READY";
-    if (["ON_HOLD", "REMAKE"].includes(job.status)) return "DELAYED";
+    if (["RECEIVED", "QC_PENDING", "READY_FOR_FITTING", "FITTING", "QUALITY_CHECK", "READY_FOR_DELIVERY", "DELIVERED", "CLOSED"].includes(job.status)) return "READY";
+    if (["ON_HOLD", "REMAKE", "REMAKE_REQUIRED"].includes(job.status)) return "DELAYED";
     const deliveryDate = job.promisedDeliveryDate ?? job.expectedDeliveryDate;
     if (deliveryDate && deliveryDate < dateOnly(new Date())) return "OVERDUE";
     return "EXPECTED";

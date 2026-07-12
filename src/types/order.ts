@@ -1,5 +1,6 @@
 export interface CreateOrderItemDTO {
-  inventoryId: number;
+  inventoryId?: number;
+  lensSeriesId?: number;
 
   itemCode: string;
 
@@ -72,6 +73,9 @@ export interface CreateOrderDTO {
     lensSeriesId?: number;
     availabilityOverrideDecision?: "READY_STOCK" | "RX" | "REVIEW_REQUIRED";
     availabilityOverrideReason?: string;
+    expectedDeliveryDate?: string;
+    expectedDeliveryTime?: string;
+    deliveryReason?: string;
   };
 
   prescription?: {

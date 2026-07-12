@@ -34,7 +34,8 @@ export function calculateBill(
 
   discountValue: number,
 
-  gstMode: GstMode = "included"
+  gstMode: GstMode = "included",
+  catalogueLines: Array<{ sellingPrice: number; quantity?: number; gstRate?: number }> = [],
 ): BillingSummary {
   let subtotal = 0;
 
@@ -46,7 +47,10 @@ export function calculateBill(
 
   const igst = 0;
 
-  for (const row of items) {
+  for (const row of [...items, ...catalogueLines.map((line) => ({
+    item: { sellingPrice: line.sellingPrice, gstRate: line.gstRate ?? 0 },
+    quantity: line.quantity ?? 1,
+  }))]) {
     const price =
       row.item.sellingPrice *
       row.quantity;

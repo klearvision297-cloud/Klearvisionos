@@ -1,0 +1,5 @@
+[33ma0fe51b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/database-dev[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mdatabase-dev[m[33m)[m feat(customers): implement live customer search and SQLite integration
+[33mea7e98b[m feat(database): initialize SQLite engine with migration system
+[33m4890c4b[m chore: configure native build environment for better-sqlite3
+[33m694477e[m feat: add routing and customer management
+[33m11efbbe[m feat: add dashboard statistics and quick actions

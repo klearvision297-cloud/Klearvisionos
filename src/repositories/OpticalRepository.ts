@@ -3,11 +3,11 @@ import type {
   AvailabilityProfile,
   AvailabilityProfileRules,
   BulkUpdateOpticalJobsDTO,
+  CompleteQualityInspectionDTO,
   CreateAvailabilityProfileDTO,
   CreateLensSeriesDTO,
   CreateOpticalJobDTO,
   DispatchLabOrdersDTO,
-  JobPriority,
   JobTimelineEvent,
   LensFeatures,
   LensSeries,
@@ -83,18 +83,6 @@ export class OpticalRepository {
     return `${prefix}${sequence.toString().padStart(6, "0")}`;
   }
 
-  generateLabOrderNumber() {
-    const year = new Date().getFullYear();
-    const prefix = `LAB-${year}-`;
-    const last = this.db
-      .prepare(
-        "SELECT labOrderNumber FROM lab_orders WHERE labOrderNumber LIKE ? ORDER BY labOrderNumber DESC LIMIT 1",
-      )
-      .get(`${prefix}%`) as { labOrderNumber: string } | undefined;
-    const sequence = last ? Number(last.labOrderNumber.slice(-6)) + 1 : 1;
-    return `${prefix}${sequence.toString().padStart(6, "0")}`;
-  }
-
   getLensSeries(query: LensSeriesQuery = {}): PaginatedResult<LensSeries> {
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, query.pageSize ?? 50));
@@ -104,17 +92,25 @@ export class OpticalRepository {
     if (query.status === "ACTIVE") clauses.push("ls.isActive = 1");
     if (query.status === "INACTIVE") clauses.push("ls.isActive = 0");
     if (query.supplierId) {
-      clauses.push("oj.supplierId = ?");
+      clauses.push("ls.supplierId = ?");
       values.push(query.supplierId);
     }
     if (query.availabilityProfileId) {
       clauses.push("ls.availabilityProfileId = ?");
       values.push(query.availabilityProfileId);
     }
+    if (query.category?.trim()) {
+      clauses.push("ls.category = ?");
+      values.push(query.category.trim());
+    }
+    if (query.brand?.trim()) {
+      clauses.push("ls.brand = ?");
+      values.push(query.brand.trim());
+    }
     if (query.search?.trim()) {
       const value = `%${query.search.trim()}%`;
-      clauses.push("(ls.brand LIKE ? OR ls.series LIKE ? OR ls.material LIKE ? OR ls.lensIndex LIKE ? OR s.supplierName LIKE ?)");
-      values.push(value, value, value, value, value);
+      clauses.push("(ls.brand LIKE ? OR ls.series LIKE ? OR ls.category LIKE ? OR ls.material LIKE ? OR ls.coating LIKE ? OR ls.lensIndex LIKE ? OR s.supplierName LIKE ?)");
+      values.push(value, value, value, value, value, value, value);
     }
 
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -123,7 +119,9 @@ export class OpticalRepository {
       SERIES: "ls.series COLLATE NOCASE, ls.brand COLLATE NOCASE",
       PRICE: "ls.defaultSellingPrice DESC, ls.brand COLLATE NOCASE",
       UPDATED: "ls.updatedAt DESC",
-    }[query.sort ?? "BRAND"];
+      CREATED: "ls.createdAt DESC",
+      RECENTLY_USED: "usageCount = 0, lastUsedAt DESC, ls.updatedAt DESC",
+    }[query.recentlyUsed ? "RECENTLY_USED" : query.sort ?? "BRAND"];
 
     const count = this.db
       .prepare(`SELECT COUNT(*) AS total FROM lens_series ls LEFT JOIN suppliers s ON s.id = ls.supplierId ${where}`)
@@ -133,7 +131,9 @@ export class OpticalRepository {
         SELECT ls.*, s.supplierName, s.phone AS supplierPhone, s.gstin AS supplierGstin,
           s.outstandingBalance AS supplierOutstanding, s.isActive AS supplierIsActive,
           s.turnaroundDays AS supplierTurnaroundDays, sap.name AS availabilityProfileName,
-          sap.rulesJson
+          sap.rulesJson,
+          (SELECT COUNT(*) FROM order_items oi WHERE oi.lensSeriesId = ls.id) AS usageCount,
+          (SELECT MAX(o.orderDate) FROM order_items oi JOIN orders o ON o.id = oi.orderId WHERE oi.lensSeriesId = ls.id) AS lastUsedAt
         FROM lens_series ls
         LEFT JOIN suppliers s ON s.id = ls.supplierId
         LEFT JOIN stock_availability_profiles sap ON sap.id = ls.availabilityProfileId
@@ -167,13 +167,13 @@ export class OpticalRepository {
     const result = this.db
       .prepare(`
         INSERT INTO lens_series (
-          brand, series, supplierId, material, lensIndex, design, coating, availabilityProfileId,
+          brand, series, category, supplierId, material, lensIndex, design, coating, tintName, availabilityProfileId,
           defaultCost, defaultSellingPrice, warrantyMonths, defaultTurnaroundDays, internalNotes,
           singleVision, bifocal, progressive, officeLens, blueCut, photochromic, polarized,
           transitions, aspheric, digital, scratchResistant, antiReflection, hydrophobic,
           uvProtection, tint, mirror, isActive, createdAt, updatedAt
         ) VALUES (
-          @brand, @series, @supplierId, @material, @lensIndex, @design, @coating, @availabilityProfileId,
+          @brand, @series, @category, @supplierId, @material, @lensIndex, @design, @coating, @tintName, @availabilityProfileId,
           @defaultCost, @defaultSellingPrice, @warrantyMonths, @defaultTurnaroundDays, @internalNotes,
           @singleVision, @bifocal, @progressive, @officeLens, @blueCut, @photochromic, @polarized,
           @transitions, @aspheric, @digital, @scratchResistant, @antiReflection, @hydrophobic,
@@ -191,8 +191,8 @@ export class OpticalRepository {
     this.db
       .prepare(`
         UPDATE lens_series SET
-          brand=@brand, series=@series, supplierId=@supplierId, material=@material, lensIndex=@lensIndex,
-          design=@design, coating=@coating, availabilityProfileId=@availabilityProfileId,
+          brand=@brand, series=@series, category=@category, supplierId=@supplierId, material=@material, lensIndex=@lensIndex,
+          design=@design, coating=@coating, tintName=@tintName, availabilityProfileId=@availabilityProfileId,
           defaultCost=@defaultCost, defaultSellingPrice=@defaultSellingPrice,
           warrantyMonths=@warrantyMonths, defaultTurnaroundDays=@defaultTurnaroundDays,
           internalNotes=@internalNotes, singleVision=@singleVision, bifocal=@bifocal,
@@ -218,6 +218,37 @@ export class OpticalRepository {
     this.db
       .prepare("UPDATE lens_series SET isActive = ?, updatedAt = ? WHERE id = ?")
       .run(isActive ? 1 : 0, new Date().toISOString(), id);
+  }
+
+  generateRepairJobNumber() {
+    const year = new Date().getFullYear();
+    const prefix = `REP-${year}-`;
+    const last = this.db.prepare("SELECT jobNumber FROM repair_jobs WHERE jobNumber LIKE ? ORDER BY jobNumber DESC LIMIT 1").get(`${prefix}%`) as { jobNumber: string } | undefined;
+    const sequence = last ? Number(last.jobNumber.slice(-6)) + 1 : 1;
+    return `${prefix}${sequence.toString().padStart(6, "0")}`;
+  }
+
+  getLensCatalogueSummary() {
+    const counts = this.db.prepare(`
+      SELECT
+        SUM(CASE WHEN isActive = 1 THEN 1 ELSE 0 END) AS activeCount,
+        SUM(CASE WHEN isActive = 0 THEN 1 ELSE 0 END) AS inactiveCount
+      FROM lens_series
+    `).get() as { activeCount: number | null; inactiveCount: number | null };
+    const mostUsed = this.db.prepare(`
+      SELECT ls.brand, ls.series
+      FROM lens_series ls
+      LEFT JOIN order_items oi ON oi.lensSeriesId = ls.id
+      GROUP BY ls.id
+      ORDER BY COUNT(oi.id) DESC, MAX(oi.createdAt) DESC, ls.brand COLLATE NOCASE, ls.series COLLATE NOCASE
+      LIMIT 1
+    `).get() as { brand: string; series: string } | undefined;
+    return {
+      activeCount: counts.activeCount ?? 0,
+      inactiveCount: counts.inactiveCount ?? 0,
+      mostUsedBrand: mostUsed?.brand ?? null,
+      mostUsedSeries: mostUsed ? `${mostUsed.brand} ${mostUsed.series}` : null,
+    };
   }
 
   getAvailabilityProfiles(includeInactive = true): AvailabilityProfile[] {
@@ -291,12 +322,8 @@ export class OpticalRepository {
   }) {
     const now = new Date().toISOString();
     const jobNumber = this.generateJobNumber();
-    const status: OpticalJobStatus =
-      data.workflowType === "REPAIR"
-        ? "CONFIRMED"
-        : workflow.decision === "RX"
-          ? "LAB_PENDING"
-          : "READY_FOR_FITTING";
+    // Billing only creates a placeholder. Lab and delivery lifecycle remains future work.
+    const status: OpticalJobStatus = "NEW";
     const result = this.db
       .prepare(`
         INSERT INTO optical_jobs (
@@ -351,25 +378,15 @@ export class OpticalRepository {
       .run(new Date().toISOString(), inventoryId);
   }
 
-  createLabOrder(jobId: number) {
-    const labOrderNumber = this.generateLabOrderNumber();
-    const now = new Date().toISOString();
-    const result = this.db
-      .prepare(`
-        INSERT INTO lab_orders (labOrderNumber, jobId, createdAt, updatedAt)
-        VALUES (?, ?, ?, ?)
-      `)
-      .run(labOrderNumber, jobId, now, now) as {
-      lastInsertRowid: number | bigint;
-    };
-    return { id: Number(result.lastInsertRowid), labOrderNumber };
-  }
-
   getJobs(query: OpticalJobQuery = {}): PaginatedResult<OpticalJob> {
     const page = Math.max(1, query.page ?? 1);
     const pageSize = Math.min(100, Math.max(1, query.pageSize ?? 50));
     const clauses: string[] = [];
     const values: unknown[] = [];
+
+    // This query is intentionally prescription-only. Repair jobs live in the
+    // separate repair_jobs table and must not leak into this workflow.
+    clauses.push("oj.workflowType = 'PRESCRIPTION'");
 
     if (query.status && query.status !== "ALL") {
       clauses.push("oj.status = ?");
@@ -384,9 +401,9 @@ export class OpticalRepository {
       values.push(query.priority);
     }
     if (query.deliveryState === "OVERDUE") clauses.push("COALESCE(oj.promisedDeliveryDate, oj.expectedDeliveryDate) < date('now') AND oj.status NOT IN ('DELIVERED', 'CLOSED', 'CANCELLED')");
-    if (query.deliveryState === "READY") clauses.push("oj.status IN ('RECEIVED', 'READY_FOR_FITTING', 'FITTING', 'QUALITY_CHECK', 'READY_FOR_DELIVERY', 'DELIVERED', 'CLOSED')");
-    if (query.deliveryState === "DELAYED") clauses.push("oj.status IN ('ON_HOLD', 'REMAKE')");
-    if (query.deliveryState === "EXPECTED") clauses.push("COALESCE(oj.promisedDeliveryDate, oj.expectedDeliveryDate) >= date('now') AND oj.status NOT IN ('RECEIVED', 'READY_FOR_FITTING', 'FITTING', 'QUALITY_CHECK', 'READY_FOR_DELIVERY', 'DELIVERED', 'CLOSED', 'ON_HOLD', 'REMAKE', 'CANCELLED')");
+    if (query.deliveryState === "READY") clauses.push("oj.status IN ('RECEIVED', 'QC_PENDING', 'READY_FOR_FITTING', 'FITTING', 'QUALITY_CHECK', 'READY_FOR_DELIVERY', 'DELIVERED', 'CLOSED')");
+    if (query.deliveryState === "DELAYED") clauses.push("oj.status IN ('ON_HOLD', 'REMAKE', 'REMAKE_REQUIRED')");
+    if (query.deliveryState === "EXPECTED") clauses.push("COALESCE(oj.promisedDeliveryDate, oj.expectedDeliveryDate) >= date('now') AND oj.status NOT IN ('RECEIVED', 'QC_PENDING', 'READY_FOR_FITTING', 'FITTING', 'QUALITY_CHECK', 'READY_FOR_DELIVERY', 'DELIVERED', 'CLOSED', 'ON_HOLD', 'REMAKE', 'REMAKE_REQUIRED', 'CANCELLED')");
     if (query.search?.trim()) {
       const value = `%${query.search.trim()}%`;
       clauses.push(`(
@@ -405,14 +422,13 @@ export class OpticalRepository {
       LEFT JOIN lens_series ls ON ls.id = oj.lensSeriesId
       LEFT JOIN suppliers s ON s.id = oj.supplierId
       LEFT JOIN inventory frame ON frame.id = oj.frameInventoryId
-      LEFT JOIN lab_orders lo ON lo.jobId = oj.id
     `;
     const total = (this.db.prepare(`SELECT COUNT(*) AS total ${base} ${where}`).get(...values) as { total: number }).total;
     const rows = this.db
       .prepare(`
         SELECT oj.*, o.orderNumber, c.name AS customerName, c.mobile AS customerPhone,
           ls.brand AS lensBrand, ls.series AS lensSeries,
-          sap.name AS availabilityProfileName, s.supplierName, lo.id AS labOrderId,
+          sap.name AS availabilityProfileName, s.supplierName,
           frame.itemCode || ' · ' || COALESCE(frame.brand, '') || ' ' || COALESCE(frame.model, '') AS frameDescription,
           (SELECT description FROM job_timeline_events WHERE jobId = oj.id ORDER BY createdAt DESC LIMIT 1) AS timelinePreview
         ${base}
@@ -426,13 +442,69 @@ export class OpticalRepository {
     return { items: rows, total, page, pageSize };
   }
 
+  getDashboard() {
+    const count = (sql: string) => (this.db.prepare(sql).get() as { total: number }).total;
+    return {
+      incompletePrescriptionJobs: count("SELECT COUNT(*) AS total FROM optical_jobs WHERE workflowType='PRESCRIPTION' AND status NOT IN ('READY_FOR_DELIVERY', 'DELIVERED', 'CLOSED')"),
+      incompleteRepairJobs: count("SELECT COUNT(*) AS total FROM repair_jobs WHERE status <> 'DELIVERED'"),
+      waitingForLens: count("SELECT COUNT(*) AS total FROM optical_jobs WHERE workflowType='PRESCRIPTION' AND status='WAITING_FOR_LENS'"),
+      waitingAtLab: count("SELECT COUNT(*) AS total FROM optical_jobs WHERE workflowType='PRESCRIPTION' AND status='AT_LAB'"),
+      readyForDelivery: count("SELECT COUNT(*) AS total FROM optical_jobs WHERE workflowType='PRESCRIPTION' AND status='READY_FOR_DELIVERY'"),
+    };
+  }
+
+  getLabReceivingSummary() {
+    const count = (where: string, ...values: unknown[]) => (this.db.prepare(`SELECT COUNT(*) AS total FROM optical_jobs WHERE workflowType = 'PRESCRIPTION' AND ${where}`).get(...values) as { total: number }).total;
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      waitingAtLab: count("status = 'AT_LAB'"),
+      receivedToday: count("receivedAt LIKE ?", `${today}%`),
+      qcPending: count("status = 'QC_PENDING'"),
+      remakeRequired: count("status = 'REMAKE_REQUIRED'"),
+      readyForDelivery: count("status = 'READY_FOR_DELIVERY'"),
+    };
+  }
+
+  createRepairJob(data: import("../types/optical").CreateRepairJobDTO) {
+    const now = new Date().toISOString();
+    const jobNumber = this.generateRepairJobNumber();
+    const result = this.db.prepare("INSERT INTO repair_jobs (jobNumber, customerId, itemReceived, complaint, charges, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'NEW', ?, ?)").run(jobNumber, data.customerId, data.itemReceived.trim(), data.complaint.trim(), data.charges, now, now) as { lastInsertRowid: number | bigint };
+    const id = Number(result.lastInsertRowid);
+    this.addRepairTimelineEvent(id, "REPAIR_CREATED", "Repair job created.");
+    return { id, jobNumber };
+  }
+
+  getRepairJobs(search = "") {
+    const value = `%${search.trim()}%`;
+    return this.db.prepare(`SELECT rj.*, c.name AS customerName, c.mobile AS customerPhone,
+      (SELECT description FROM repair_job_timeline_events WHERE repairJobId=rj.id ORDER BY createdAt DESC LIMIT 1) AS timelinePreview
+      FROM repair_jobs rj JOIN customers c ON c.id=rj.customerId
+      WHERE rj.jobNumber LIKE ? OR c.name LIKE ? OR c.mobile LIKE ? OR rj.itemReceived LIKE ? OR rj.complaint LIKE ?
+      ORDER BY rj.createdAt DESC, rj.id DESC`).all(value, value, value, value, value);
+  }
+
+  getRepairJob(id: number) {
+    const job = this.db.prepare("SELECT rj.*, c.name AS customerName, c.mobile AS customerPhone FROM repair_jobs rj JOIN customers c ON c.id=rj.customerId WHERE rj.id=?").get(id);
+    if (!job) return undefined;
+    const timeline = this.db.prepare("SELECT id, repairJobId AS jobId, eventType, description, performedBy, notes, createdAt FROM repair_job_timeline_events WHERE repairJobId=? ORDER BY createdAt, id").all(id);
+    return { ...job as object, timeline };
+  }
+
+  updateRepairJob(id: number, status: import("../types/optical").RepairJobStatus) {
+    this.db.prepare("UPDATE repair_jobs SET status=?, updatedAt=? WHERE id=?").run(status, new Date().toISOString(), id);
+  }
+
+  addRepairTimelineEvent(repairJobId: number, eventType: string, description: string, performedBy = "Current User", notes?: string) {
+    this.db.prepare("INSERT INTO repair_job_timeline_events (repairJobId,eventType,description,performedBy,notes,createdAt) VALUES (?, ?, ?, ?, ?, ?)").run(repairJobId, eventType, description, performedBy, notes?.trim() || null, new Date().toISOString());
+  }
+
   getJobDetail(jobId: number): Omit<OpticalJobDetail, "deliveryState" | "timeline"> | undefined {
     const row = this.db
       .prepare(`
         SELECT oj.*, o.orderNumber, o.totalAmount AS invoiceTotal, o.paidAmount AS advanceAmount,
           o.balanceAmount AS outstandingAmount, c.name AS customerName, c.mobile AS customerPhone,
           ls.brand AS lensBrand, ls.series AS lensSeries, sap.name AS availabilityProfileName,
-          s.supplierName, lo.id AS labOrderId,
+          s.supplierName,
           frame.itemCode || ' · ' || COALESCE(frame.brand, '') || ' ' || COALESCE(frame.model, '') AS frameDescription
         FROM optical_jobs oj
         JOIN customers c ON c.id = oj.customerId
@@ -440,7 +512,6 @@ export class OpticalRepository {
         LEFT JOIN lens_series ls ON ls.id = oj.lensSeriesId
         LEFT JOIN stock_availability_profiles sap ON sap.id = oj.availabilityProfileId
         LEFT JOIN suppliers s ON s.id = oj.supplierId
-        LEFT JOIN lab_orders lo ON lo.jobId = oj.id
         LEFT JOIN inventory frame ON frame.id = oj.frameInventoryId
         WHERE oj.id = ?
       `)
@@ -496,29 +567,38 @@ export class OpticalRepository {
   getLabJobs(query: OpticalLabJobQuery): OpticalLabJob[] {
     const clauses: string[] = [];
     const values: unknown[] = [];
-    clauses.push(query.stage === "DISPATCH" ? "oj.status IN ('LAB_PENDING', 'REMAKE')" : "oj.status = 'DISPATCHED'");
+    const receivingStatus = query.status ?? "AT_LAB";
+    clauses.push(query.stage === "DISPATCH"
+      ? "oj.workflowType = 'PRESCRIPTION' AND oj.status = 'READY_FOR_DISPATCH'"
+      : receivingStatus === "RECEIVED_TODAY"
+        ? "oj.workflowType = 'PRESCRIPTION' AND date(oj.receivedAt) = date('now')"
+        : "oj.workflowType = 'PRESCRIPTION' AND oj.status = ?");
+    if (query.stage === "RECEIVING" && receivingStatus !== "RECEIVED_TODAY") values.push(receivingStatus);
     if (query.supplierId) {
       clauses.push("oj.supplierId = ?");
       values.push(query.supplierId);
     }
     if (query.search?.trim()) {
       const value = `%${query.search.trim()}%`;
-      clauses.push("(lo.labOrderNumber LIKE ? OR oj.jobNumber LIKE ? OR c.name LIKE ? OR s.supplierName LIKE ?)");
-      values.push(value, value, value, value);
+      clauses.push("(oj.jobNumber LIKE ? OR o.orderNumber LIKE ? OR c.name LIKE ? OR oj.assignedLab LIKE ? OR ls.brand LIKE ? OR ls.series LIKE ? OR frame.itemCode LIKE ? OR frame.brand LIKE ? OR frame.model LIKE ?)");
+      values.push(value, value, value, value, value, value, value, value, value);
     }
     const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
     return this.db
       .prepare(`
-        SELECT oj.*, lo.id AS labOrderId, lo.labOrderNumber, lo.specialInstructions,
+        SELECT oj.*,
           o.orderNumber, c.name AS customerName, c.mobile AS customerPhone, ls.brand AS lensBrand,
-          ls.series AS lensSeries, sap.name AS availabilityProfileName, s.supplierName
-        FROM lab_orders lo
-        JOIN optical_jobs oj ON oj.id = lo.jobId
+          ls.series AS lensSeries, sap.name AS availabilityProfileName, s.supplierName,
+          frame.itemCode || ' · ' || COALESCE(frame.brand, '') || ' ' || COALESCE(frame.model, '') AS frameDescription,
+          TRIM(COALESCE(p.rightSphere, '') || ' / ' || COALESCE(p.rightCylinder, '') || ' × ' || COALESCE(p.rightAxis, '') || ' | ' || COALESCE(p.leftSphere, '') || ' / ' || COALESCE(p.leftCylinder, '') || ' × ' || COALESCE(p.leftAxis, '')) AS prescriptionSummary
+        FROM optical_jobs oj
         JOIN orders o ON o.id = oj.orderId
         JOIN customers c ON c.id = oj.customerId
+        LEFT JOIN prescriptions p ON p.id = oj.prescriptionId
         LEFT JOIN suppliers s ON s.id = oj.supplierId
         LEFT JOIN lens_series ls ON ls.id = oj.lensSeriesId
         LEFT JOIN stock_availability_profiles sap ON sap.id = oj.availabilityProfileId
+        LEFT JOIN inventory frame ON frame.id = oj.frameInventoryId
         ${where}
         ORDER BY COALESCE(oj.promisedDeliveryDate, oj.expectedDeliveryDate) IS NULL,
           COALESCE(oj.promisedDeliveryDate, oj.expectedDeliveryDate), oj.updatedAt DESC
@@ -529,16 +609,19 @@ export class OpticalRepository {
   findLabJob(jobId: number): OpticalLabJob | undefined {
     return this.db
       .prepare(`
-        SELECT oj.*, lo.id AS labOrderId, lo.labOrderNumber, lo.specialInstructions,
+        SELECT oj.*, 
           o.orderNumber, c.name AS customerName, c.mobile AS customerPhone, ls.brand AS lensBrand,
-          ls.series AS lensSeries, sap.name AS availabilityProfileName, s.supplierName
-        FROM lab_orders lo
-        JOIN optical_jobs oj ON oj.id = lo.jobId
+          ls.series AS lensSeries, sap.name AS availabilityProfileName, s.supplierName,
+          frame.itemCode || ' · ' || COALESCE(frame.brand, '') || ' ' || COALESCE(frame.model, '') AS frameDescription,
+          TRIM(COALESCE(p.rightSphere, '') || ' / ' || COALESCE(p.rightCylinder, '') || ' × ' || COALESCE(p.rightAxis, '') || ' | ' || COALESCE(p.leftSphere, '') || ' / ' || COALESCE(p.leftCylinder, '') || ' × ' || COALESCE(p.leftAxis, '')) AS prescriptionSummary
+        FROM optical_jobs oj
         JOIN orders o ON o.id = oj.orderId
         JOIN customers c ON c.id = oj.customerId
+        LEFT JOIN prescriptions p ON p.id = oj.prescriptionId
         LEFT JOIN suppliers s ON s.id = oj.supplierId
         LEFT JOIN lens_series ls ON ls.id = oj.lensSeriesId
         LEFT JOIN stock_availability_profiles sap ON sap.id = oj.availabilityProfileId
+        LEFT JOIN inventory frame ON frame.id = oj.frameInventoryId
         WHERE oj.id = ?
       `)
       .get(jobId) as OpticalLabJob | undefined;
@@ -549,12 +632,12 @@ export class OpticalRepository {
     for (const jobId of data.jobIds) {
       const result = this.db
         .prepare(`
-          UPDATE optical_jobs SET status = 'DISPATCHED', dispatchedAt = ?, courier = ?, trackingNumber = ?,
+          UPDATE optical_jobs SET status = 'AT_LAB', assignedLab = COALESCE(?, assignedLab), dispatchedAt = ?, courier = ?, trackingNumber = ?,
             dispatchRemarks = ?, updatedAt = ?
-          WHERE id = ? AND status IN ('LAB_PENDING', 'REMAKE')
-            AND EXISTS (SELECT 1 FROM lab_orders WHERE lab_orders.jobId = optical_jobs.id)
+          WHERE id = ? AND workflowType = 'PRESCRIPTION' AND status = 'READY_FOR_DISPATCH'
         `)
         .run(
+          data.assignedLab?.trim() || null,
           data.dispatchDate ?? now.slice(0, 10),
           data.courier?.trim() || null,
           data.trackingNumber?.trim() || null,
@@ -562,33 +645,49 @@ export class OpticalRepository {
           now,
           jobId,
         ) as { changes?: number };
-      if (result.changes === 0) throw new Error("Only optical jobs awaiting lab dispatch can be dispatched.");
+      if (result.changes === 0) throw new Error("Only prescription optical jobs awaiting dispatch can be dispatched.");
     }
   }
 
   receiveLabJob(jobId: number, data: ReceiveLabOrderDTO) {
     const now = new Date().toISOString();
-    const status: OpticalJobStatus = data.inspection === "ACCEPT" ? "RECEIVED" : data.inspection === "REJECT" ? "ON_HOLD" : "REMAKE";
-    this.db
+    const result = this.db
       .prepare(`
-        UPDATE optical_jobs SET status = ?, receivedAt = ?, receivedBy = ?, inspectionStatus = ?,
-          inspectionNotes = ?, rejectedReason = ?, remakeReason = ?,
-          remakeCount = CASE WHEN ? = 'REMAKE' THEN remakeCount + 1 ELSE remakeCount END,
+        UPDATE optical_jobs SET status = 'QC_PENDING', receivedAt = ?, receivedBy = ?, inspectionStatus = NULL,
+          inspectionNotes = ?, rejectedReason = NULL, remakeReason = NULL,
           updatedAt = ?
-        WHERE id = ? AND status = 'DISPATCHED'
+        WHERE id = ? AND status = 'AT_LAB'
       `)
       .run(
-        status,
         now,
         data.performedBy ?? "Current User",
-        data.inspection,
-        data.notes?.trim() || null,
-        data.inspection === "REJECT" ? data.notes?.trim() || null : null,
-        data.inspection === "REMAKE" ? data.notes?.trim() || null : null,
-        data.inspection,
+        data.remarks?.trim() || null,
         now,
         jobId,
-      );
+      ) as { changes?: number };
+    if (!result.changes) throw new Error("This optical job is not available for receiving.");
+  }
+
+  completeQualityInspection(jobId: number, data: CompleteQualityInspectionDTO) {
+    const now = new Date().toISOString();
+    const status: OpticalJobStatus = data.result === "PASS" ? "READY_FOR_DELIVERY" : "REMAKE_REQUIRED";
+    const result = this.db.prepare(`
+      UPDATE optical_jobs SET status = ?, inspectionStatus = ?, inspectionNotes = ?,
+        rejectedReason = ?, remakeReason = ?, qualityCheckedAt = ?, qcCompletedAt = ?, updatedAt = ?
+      WHERE id = ? AND status = 'QC_PENDING'
+    `).run(status, data.result, JSON.stringify({ checklist: data.checklist, remarks: data.remarks?.trim() || null }),
+      data.result === "FAIL" ? data.failureReason ?? null : null,
+      data.result === "FAIL" ? data.failureReason ?? null : null, now, now, now, jobId) as { changes?: number };
+    if (!result.changes) throw new Error("This optical job is not awaiting quality inspection.");
+  }
+
+  returnForRemake(jobId: number) {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE optical_jobs SET status = 'READY_FOR_DISPATCH', remakeCount = remakeCount + 1, updatedAt = ?
+      WHERE id = ? AND status = 'REMAKE_REQUIRED'
+    `).run(now, jobId) as { changes?: number };
+    if (!result.changes) throw new Error("This optical job is not awaiting a remake return.");
   }
 
   createNotification(
@@ -677,11 +776,13 @@ export class OpticalRepository {
     return {
       brand: data.brand.trim(),
       series: data.series.trim(),
+      category: data.category?.trim() || null,
       supplierId: data.supplierId ?? null,
       material: data.material?.trim() || null,
       lensIndex: data.lensIndex?.trim() || null,
       design: data.design?.trim() || null,
       coating: data.coating?.trim() || null,
+      tintName: data.tintName?.trim() || null,
       availabilityProfileId: data.availabilityProfileId ?? null,
       defaultCost: data.defaultCost,
       defaultSellingPrice: data.defaultSellingPrice,
